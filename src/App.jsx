@@ -868,6 +868,18 @@ export default function App() {
 
         {page === PAGE.ADMIN && (
           <>
+            <section className="dashboard">
+              {dashboardCards.map((card) => (
+                <div key={card.label} className="card stat">
+                  <div>
+                    <div className="label">{card.label}</div>
+                    <div className="value">{card.value}</div>
+                    <div className="helper">{card.helper}</div>
+                  </div>
+                  <div className="icon">{card.icon}</div>
+                </div>
+              ))}
+            </section>
             <AdminLogin session={session} onLogin={setSession} onLogout={logoutAdmin} isAdmin={isAdmin} />
             {isAdmin && (
               <>
