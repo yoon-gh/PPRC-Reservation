@@ -808,7 +808,7 @@ export default function App() {
       <div className="container">
         <header className="header">
           <div>
-            <p><strong>PPRC Reservation System</strong></p>
+            <p><strong>Phenotyping Facility Reservation System</strong></p>
             <h1>표현체 연구시설 예약 시스템</h1>
             <p>재배시설은 장기 재배 예약으로, 촬영시설은 시간 단위 예약으로 분리 관리합니다. 예약 데이터는 Supabase 공용 DB에 저장됩니다.</p>
             {loading && <p>예약 데이터를 불러오는 중입니다...</p>}
