@@ -247,6 +247,35 @@ function getReservationsForDay(reservations, day) {
   return reservations.filter((reservation) => rangesOverlap(toDate(reservation.start), toDate(reservation.end), dayStart, dayEnd));
 }
 
+function groupReservationsByDay(reservations, month) {
+  const monthReservations = filterReservationsByMonth(reservations, month);
+  const groups = new Map();
+
+  monthReservations.forEach((reservation) => {
+    const start = toDate(reservation.start);
+    const end = toDate(reservation.end);
+    if (!start || !end) return;
+
+    const cursor = new Date(start);
+    cursor.setHours(0, 0, 0, 0);
+    const final = new Date(end);
+    final.setHours(0, 0, 0, 0);
+
+    while (cursor <= final) {
+      if (cursor.getMonth() === month.getMonth() && cursor.getFullYear() === month.getFullYear()) {
+        const key = dateKey(cursor);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(reservation);
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  });
+
+  return [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, items]) => ({ key, items }));
+}
+
 function csvEscape(value) {
   const text = String(value ?? "");
   return `"${text.replaceAll('"', '""')}"`;
@@ -464,6 +493,7 @@ function ReservationForm({ reservations, onAddReservation, disabled }) {
 function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange }) {
   const { days, label } = useMemo(() => getCalendarDays(month.getFullYear(), month.getMonth()), [month]);
   const visibleReservations = useMemo(() => filterReservationsByCategory(reservations, selectedCategory), [reservations, selectedCategory]);
+  const mobileAgenda = useMemo(() => groupReservationsByDay(visibleReservations, month), [visibleReservations, month]);
 
   function moveMonth(offset) {
     onMonthChange(new Date(month.getFullYear(), month.getMonth() + offset, 1));
@@ -472,34 +502,58 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
   return (
     <div className="card calendar-card">
       <div className="calendar-head">
-        <div>
+        <div className="calendar-copy">
           <h3>월간 캘린더</h3>
           <p>선택한 구분의 예약을 월 단위로 표시합니다.</p>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div className="calendar-controls">
           <Button type="button" variant="light" onClick={() => moveMonth(-1)}>이전</Button>
           <div className="calendar-title">{label}</div>
           <Button type="button" variant="light" onClick={() => moveMonth(1)}>다음</Button>
         </div>
       </div>
-      <div className="calendar-grid">
-        {["일", "월", "화", "수", "목", "금", "토"].map((day) => <div key={day} className="day-name">{day}</div>)}
-        {days.map(({ date, key, inMonth }) => {
-          const dayReservations = getReservationsForDay(visibleReservations, date);
-          const visible = dayReservations.slice(0, 3);
-          const extra = dayReservations.length - visible.length;
-          return (
-            <div key={key} className={`day ${inMonth ? "" : "muted"}`}>
-              <strong>{date.getDate()}</strong>
-              {visible.map((reservation) => (
-                <div key={`${reservation.id}-${key}`} className={`event ${STATUS_CLASS[reservation.status]}`} title={`${reservation.facility} / ${reservation.title}`}>
-                  {categoryIcon[reservation.category]} {reservation.facility} · {reservation.title}
+
+      <div className="calendar-scroll">
+        <div className="calendar-grid">
+          {["일", "월", "화", "수", "목", "금", "토"].map((day) => <div key={day} className="day-name">{day}</div>)}
+          {days.map(({ date, key, inMonth }) => {
+            const dayReservations = getReservationsForDay(visibleReservations, date);
+            const visible = dayReservations.slice(0, 3);
+            const extra = dayReservations.length - visible.length;
+            return (
+              <div key={key} className={`day ${inMonth ? "" : "muted"}`}>
+                <strong>{date.getDate()}</strong>
+                {visible.map((reservation) => (
+                  <div key={`${reservation.id}-${key}`} className={`event ${STATUS_CLASS[reservation.status]}`} title={`${reservation.facility} / ${reservation.title}`}>
+                    {categoryIcon[reservation.category]} {reservation.facility} · {reservation.title}
+                  </div>
+                ))}
+                {extra > 0 && <div className="sensor-note">+{extra}건 더 있음</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mobile-agenda">
+        {mobileAgenda.length === 0 ? (
+          <div className="empty-mobile-card">해당 월 예약이 없습니다.</div>
+        ) : mobileAgenda.map(({ key, items }) => (
+          <div key={key} className="mobile-day-group">
+            <div className="mobile-day-title">{key}</div>
+            {items.map((reservation) => (
+              <div key={`${key}-${reservation.id}`} className="mobile-reservation-card">
+                <div className="mobile-card-top">
+                  <strong>{reservation.title}</strong>
+                  <StatusBadge status={reservation.status} />
                 </div>
-              ))}
-              {extra > 0 && <div className="sensor-note">+{extra}건 더 있음</div>}
-            </div>
-          );
-        })}
+                <div className="mobile-card-line">{getCategoryLabel(reservation.category)} · {reservation.facility}</div>
+                <div className="mobile-card-line">{formatPeriod(reservation)} / {formatTime(reservation)}</div>
+                <div className="mobile-card-line">신청자: {reservation.user || "-"}</div>
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -514,6 +568,24 @@ function ReservationTable({ reservations }) {
           <p>재배는 기간 단위, 촬영은 시간 단위로 표시합니다.</p>
         </div>
       </div>
+
+      <div className="mobile-reservation-list">
+        {reservations.length === 0 ? (
+          <div className="empty-mobile-card">표시할 예약이 없습니다.</div>
+        ) : reservations.map((reservation) => (
+          <div className="mobile-reservation-card" key={`mobile-${reservation.id}`}>
+            <div className="mobile-card-top">
+              <strong>{reservation.title}</strong>
+              <StatusBadge status={reservation.status} />
+            </div>
+            <div className="mobile-card-line">{getCategoryLabel(reservation.category)} · {reservation.facility}</div>
+            <div className="mobile-card-line">작목: {reservation.crop || "-"}</div>
+            <div className="mobile-card-line">{formatPeriod(reservation)} / {formatTime(reservation)}</div>
+            <div className="mobile-card-line">연계: {reservation.linked || "-"}</div>
+          </div>
+        ))}
+      </div>
+
       <div className="table-wrap">
         <table>
           <thead>
@@ -819,14 +891,14 @@ export default function App() {
             <p>재배시설은 장기 재배 예약으로, 촬영시설은 시간 단위 예약으로 분리 관리합니다. 예약 데이터는 Supabase 공용 DB에 저장됩니다.</p>
             {loading && <p>예약 데이터를 불러오는 중입니다...</p>}
           </div>
-          <div className="mode-tabs">
+          <div className="mode-tabs header-actions">
             <button type="button" onClick={() => setViewMode(VIEW_MODE.USER)} className={viewMode === VIEW_MODE.USER ? "active" : ""}>사용자</button>
             <button type="button" onClick={() => setViewMode(VIEW_MODE.ADMIN)} className={viewMode === VIEW_MODE.ADMIN ? "active" : ""}>관리자</button>
             <button type="button" onClick={loadDemoData}>예시 불러오기</button>
           </div>
         </header>
 
-        <section className="dashboard">
+        <section className="dashboard" aria-label="대시보드 요약">
           {dashboardCards.map((card) => (
             <div key={card.label} className="card stat">
               <div>
