@@ -491,7 +491,16 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
         <div className="calendar-grid">
           {["일", "월", "화", "수", "목", "금", "토"].map((day) => <div key={day} className="day-name">{day}</div>)}
           {days.map(({ date, key, inMonth }) => {
-            const dayReservations = getReservationsForDay(visibleReservations, date);
+            const dayStart = new Date(date);
+            dayStart.setHours(0, 0, 0, 0);
+            const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+            const dayReservations = getReservationsForDay(visibleReservations, date).filter((reservation) => {
+              const start = toDate(reservation.start);
+              if (!start) return false;
+              start.setHours(0, 0, 0, 0);
+              if (start.getTime() === dayStart.getTime()) return true;
+              return start < monthStart && dayStart.getTime() === monthStart.getTime();
+            });
             const visible = dayReservations.slice(0, 3);
             const extra = dayReservations.length - visible.length;
             return (
