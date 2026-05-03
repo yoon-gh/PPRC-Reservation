@@ -33,7 +33,7 @@ const CATEGORY_LABEL = Object.freeze({
 });
 
 const VIEW_MODE = Object.freeze({ USER: "user", ADMIN: "admin" });
-const USER_SECTION = Object.freeze({ OVERVIEW: "overview", RESERVE: "reserve" });
+const USER_SECTION = Object.freeze({ OVERVIEW: "overview", STATUS: "status", RESERVE: "reserve" });
 
 const STATUS_CLASS = {
   available: "available-badge",
@@ -819,23 +819,12 @@ export default function App() {
           </div>
         </header>
 
-        <section className="dashboard">
-          {dashboardCards.map((card) => (
-            <div key={card.label} className="card stat">
-              <div>
-                <div className="label">{card.label}</div>
-                <div className="value">{card.value}</div>
-                <div className="helper">{card.helper}</div>
-              </div>
-              <div className="icon">{card.icon}</div>
-            </div>
-          ))}
-        </section>
 
         {viewMode === VIEW_MODE.USER && (
           <div className="user-layout">
             <div className="mode-tabs user-tabs">
               <button type="button" onClick={() => setUserSection(USER_SECTION.OVERVIEW)} className={userSection === USER_SECTION.OVERVIEW ? "active" : ""}>시설현황</button>
+              <button type="button" onClick={() => setUserSection(USER_SECTION.STATUS)} className={userSection === USER_SECTION.STATUS ? "active" : ""}>예약현황</button>
               <button type="button" onClick={() => setUserSection(USER_SECTION.RESERVE)} className={userSection === USER_SECTION.RESERVE ? "active" : ""}>예약하기</button>
             </div>
 
@@ -866,18 +855,8 @@ export default function App() {
               </>
             )}
 
-            {userSection === USER_SECTION.RESERVE && (
+            {userSection === USER_SECTION.STATUS && (
               <>
-                <section className="two-col user-reservation-section">
-                  <ReservationForm reservations={reservationsState} onAddReservation={addReservation} disabled={!isSupabaseConfigured} />
-                  <div className="card rules">
-                    <h3>예약 운영 규칙</h3>
-                    <p><strong>재배 예약</strong>은 작목, 재배기간, 처리조건, 식물체 수를 기준으로 승인합니다.</p>
-                    <p><strong>촬영 예약</strong>은 촬영시설, 센서, 촬영시간, 연계 재배 예약 여부를 기준으로 승인합니다.</p>
-                    <p>동일 시설·장비의 시간이 겹치면 저장되지 않습니다.</p>
-                    <p>점검, 보정, 수리 일정도 중복 방지 대상에 포함됩니다.</p>
-                  </div>
-                </section>
                 <section>
                   <div className="filter-row">
                     {[CATEGORY.ALL, CATEGORY.GROWTH, CATEGORY.IMAGING, CATEGORY.MAINTENANCE].map((name) => (
@@ -886,13 +865,39 @@ export default function App() {
                   </div>
                 </section>
                 <ReservationTable reservations={filteredReservations} />
+                <MonthlyCalendar reservations={reservationsState} selectedCategory={tab} month={calendarMonth} onMonthChange={setCalendarMonth} />
               </>
+            )}
+
+            {userSection === USER_SECTION.RESERVE && (
+              <section className="two-col user-reservation-section">
+                <ReservationForm reservations={reservationsState} onAddReservation={addReservation} disabled={!isSupabaseConfigured} />
+                <div className="card rules">
+                  <h3>예약 운영 규칙</h3>
+                  <p><strong>재배 예약</strong>은 작목, 재배기간, 처리조건, 식물체 수를 기준으로 승인합니다.</p>
+                  <p><strong>촬영 예약</strong>은 촬영시설, 센서, 촬영시간, 연계 재배 예약 여부를 기준으로 승인합니다.</p>
+                  <p>동일 시설·장비의 시간이 겹치면 저장되지 않습니다.</p>
+                  <p>점검, 보정, 수리 일정도 중복 방지 대상에 포함됩니다.</p>
+                </div>
+              </section>
             )}
           </div>
         )}
 
         {viewMode === VIEW_MODE.ADMIN && (
           <>
+            <section className="dashboard">
+              {dashboardCards.map((card) => (
+                <div key={card.label} className="card stat">
+                  <div>
+                    <div className="label">{card.label}</div>
+                    <div className="value">{card.value}</div>
+                    <div className="helper">{card.helper}</div>
+                  </div>
+                  <div className="icon">{card.icon}</div>
+                </div>
+              ))}
+            </section>
             <AdminLogin session={session} onLogin={setSession} onLogout={logoutAdmin} isAdmin={isAdmin} />
             {isAdmin && (
               <AdminReservationPanel
