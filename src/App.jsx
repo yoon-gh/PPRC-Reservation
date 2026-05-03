@@ -833,14 +833,14 @@ export default function App() {
         {viewMode === VIEW_MODE.USER && (
           <div className="user-layout">
             <div className="facility-sections">
-              <section className="user-growth-section">
+              <section className="user-growth-section facility-section">
                 <SectionTitle icon={categoryIcon[CATEGORY.GROWTH]} title="재배시설" subtitle="기간 단위로 예약하고, 필요 시 촬영 예약과 연결합니다." />
                 <div className="grid-5" style={{ marginTop: 14 }}>
                   {growthFacilities.map((item) => <FacilityCard key={item.id} item={item} />)}
                 </div>
               </section>
 
-              <section className="user-imaging-section">
+              <section className="user-imaging-section facility-section">
                 <SectionTitle icon={categoryIcon[CATEGORY.IMAGING]} title="촬영시설 및 장비" subtitle="시간 단위 예약, 연계 촬영과 독립 촬영을 구분합니다." />
                 <div className="grid-5" style={{ marginTop: 14 }}>
                   {imagingFacilities.map((item) => <FacilityCard key={item.id} item={item} />)}
