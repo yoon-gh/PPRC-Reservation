@@ -431,7 +431,7 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
             <input value={form.title} onChange={(event) => updateForm("title", event.target.value)} placeholder="예: 배추 팁번 실험" />
           </label>
           <label>신청자/소속
-            <input value={form.user} onChange={(event) => updateForm("user", event.target.value)} placeholder="예: 채소기초기반과 홍길동" />
+            <input value={form.user} onChange={(event) => updateForm("user", event.target.value)} placeholder="예: 채소과 홍길동" />
           </label>
           {!isMaintenance && (
             <label className="full">작목
