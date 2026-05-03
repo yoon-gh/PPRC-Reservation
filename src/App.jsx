@@ -108,6 +108,14 @@ function formatPeriod(reservation) {
   return dateKey(start) === dateKey(end) ? dateKey(start) : `${dateKey(start)} ~ ${dateKey(end)}`;
 }
 
+function formatShortPeriod(reservation) {
+  const start = toDate(reservation.start);
+  const end = toDate(reservation.end);
+  if (!start || !end) return "-";
+  const short = (date) => `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return `${short(start)}~${short(end)}`;
+}
+
 function formatTime(reservation) {
   const start = toDate(reservation.start);
   const end = toDate(reservation.end);
@@ -305,6 +313,13 @@ function SectionTitle({ icon, title, subtitle }) {
         <h2>{title}</h2>
         <p>{subtitle}</p>
       </div>
+
+      <footer className="footer-note">
+        <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
+        <p>국립원예특작과학원 채소기초기반과</p>
+        <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
+        <p>Ver. 1.0 (2026.05)</p>
+      </footer>
     </div>
   );
 }
@@ -321,6 +336,13 @@ function FacilityCard({ item }) {
         <h3>{item.name}</h3>
         {showSensorMemo && <div className="sensor-note"> {item.sensors.join(", ")}</div>}
       </div>
+
+      <footer className="footer-note">
+        <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
+        <p>국립원예특작과학원 채소기초기반과</p>
+        <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
+        <p>Ver. 1.0 (2026.05)</p>
+      </footer>
     </div>
   );
 }
@@ -476,8 +498,12 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
               <div key={key} className={`day ${inMonth ? "" : "muted"}`}>
                 <strong>{date.getDate()}</strong>
                 {visible.map((reservation) => (
-                  <div key={`${reservation.id}-${key}`} className={`event ${STATUS_CLASS[reservation.status]}`} title={`${reservation.facility} / ${reservation.title}`}>
-                    {categoryIcon[reservation.category]} {reservation.facility} · {reservation.title}
+                  <div
+                    key={`${reservation.id}-${key}`}
+                    className={`event ${STATUS_CLASS[reservation.status]}`}
+                    title={`${reservation.title} (${formatShortPeriod(reservation)})`}
+                  >
+                    {reservation.facility}
                   </div>
                 ))}
                 {extra > 0 && <div className="sensor-note">+{extra}건 더 있음</div>}
@@ -507,6 +533,13 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
           </div>
         ))}
       </div>
+
+      <footer className="footer-note">
+        <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
+        <p>국립원예특작과학원 채소기초기반과</p>
+        <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
+        <p>Ver. 1.0 (2026.05)</p>
+      </footer>
     </div>
   );
 }
@@ -561,6 +594,13 @@ function ReservationTable({ reservations }) {
           </tbody>
         </table>
       </div>
+
+      <footer className="footer-note">
+        <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
+        <p>국립원예특작과학원 채소기초기반과</p>
+        <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
+        <p>Ver. 1.0 (2026.05)</p>
+      </footer>
     </div>
   );
 }
@@ -735,6 +775,13 @@ function AdminReservationPanel({ reservations, selectedMonthReservations, onUpda
           </tbody>
         </table>
       </div>
+
+      <footer className="footer-note">
+        <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
+        <p>국립원예특작과학원 채소기초기반과</p>
+        <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
+        <p>Ver. 1.0 (2026.05)</p>
+      </footer>
     </div>
   );
 }
@@ -932,6 +979,13 @@ export default function App() {
         )}
 
       </div>
+
+      <footer className="footer-note">
+        <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
+        <p>국립원예특작과학원 채소기초기반과</p>
+        <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
+        <p>Ver. 1.0 (2026.05)</p>
+      </footer>
     </div>
   );
 }
