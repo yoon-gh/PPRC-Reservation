@@ -470,6 +470,11 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
   const { days, label } = useMemo(() => getCalendarDays(month.getFullYear(), month.getMonth()), [month]);
   const visibleReservations = useMemo(() => filterReservationsByCategory(reservations, selectedCategory), [reservations, selectedCategory]);
   const mobileAgenda = useMemo(() => groupReservationsByDay(visibleReservations, month), [visibleReservations, month]);
+  const todayKey = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dateKey(today);
+  }, []);
 
   function moveMonth(offset) {
     onMonthChange(new Date(month.getFullYear(), month.getMonth() + offset, 1));
@@ -506,8 +511,8 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
             const visible = dayReservations.slice(0, 3);
             const extra = dayReservations.length - visible.length;
             return (
-              <div key={key} className={`day ${inMonth ? "" : "muted"}`}>
-                <strong>{date.getDate()}</strong>
+              <div key={key} className={`day ${inMonth ? "" : "muted"} ${key === todayKey ? "today" : ""}`}>
+                <strong className={key === todayKey ? "today-label" : ""}>{date.getDate()}</strong>
                 {visible.map((reservation) => (
                   <div
                     key={`${reservation.id}-${key}`}
