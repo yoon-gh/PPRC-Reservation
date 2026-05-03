@@ -72,6 +72,7 @@ const defaultForm = {
   start: "2026-05-13T09:00",
   end: "2026-05-13T18:00",
   imagingMode: "독립 촬영",
+  growthImagingPlan: "미촬영",
 };
 
 const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || "")
@@ -338,6 +339,7 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
   const [message, setMessage] = useState(null);
   const selectableFacilities = getFacilitiesByCategory(form.category);
   const isImaging = form.category === CATEGORY.IMAGING;
+  const isGrowth = form.category === CATEGORY.GROWTH;
   const isMaintenance = form.category === CATEGORY.MAINTENANCE;
   const canSelectMaintenance = isAdmin;
 
@@ -372,7 +374,13 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
       start: form.start,
       end: form.end,
       status: isMaintenance ? RESERVATION_STATUS.MAINTENANCE : RESERVATION_STATUS.PENDING,
-      linked: isMaintenance ? "예약 불가" : isImaging ? form.imagingMode : "미연계",
+      linked: isMaintenance
+        ? "예약 불가"
+        : isImaging
+          ? form.imagingMode
+          : isGrowth
+            ? (form.growthImagingPlan === "촬영 예정" ? form.imagingMode : "미촬영")
+            : "미연계",
     };
 
     if (isMaintenance && !isAdmin) {
@@ -436,7 +444,15 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
           <label>종료 일시
             <input value={form.end} onChange={(event) => updateForm("end", event.target.value)} type="datetime-local" />
           </label>
-          {isImaging && (
+          {isGrowth && (
+            <label className="full">촬영 여부
+              <select value={form.growthImagingPlan} onChange={(event) => updateForm("growthImagingPlan", event.target.value)}>
+                <option>미촬영</option>
+                <option>촬영 예정</option>
+              </select>
+            </label>
+          )}
+          {(isImaging || (isGrowth && form.growthImagingPlan === "촬영 예정")) && (
             <label className="full">촬영 방식
               <select value={form.imagingMode} onChange={(event) => updateForm("imagingMode", event.target.value)}>
                 <option>독립 촬영</option>
