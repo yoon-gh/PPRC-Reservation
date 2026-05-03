@@ -502,7 +502,7 @@ function ReservationTable({ reservations }) {
     <div className="card table-card">
       <div className="table-head">
         <div>
-          <h3>예약 현황</h3>
+          <h3>예약 리스트</h3>
           <p>재배는 기간 단위, 촬영은 시간 단위로 표시합니다.</p>
         </div>
       </div>
