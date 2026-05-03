@@ -379,7 +379,7 @@ function ReservationForm({ reservations, onAddReservation, disabled }) {
             <h3>예약 신청</h3>
             <p>동일 시설·장비의 시간 중복 여부를 확인한 뒤 저장합니다.</p>
           </div>
-          <Button type="submit" disabled={disabled}>신청 저장</Button>
+          <Button type="submit" disabled={disabled}>저장</Button>
         </div>
         {message && <div className={`message ${message.type}`}>{message.text}</div>}
         {disabled && <div className="setup-note">Supabase 환경변수가 설정되지 않아 저장 기능이 비활성화되었습니다.</div>}
