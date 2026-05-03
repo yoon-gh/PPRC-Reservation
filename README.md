@@ -2,6 +2,8 @@
 
 React + Vite + Supabase 기반 프로토타입입니다.
 
+##
+URL : https://pprc-reservation.vercel.app/
 
 ## 기능
 
