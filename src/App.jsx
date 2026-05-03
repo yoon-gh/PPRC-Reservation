@@ -397,7 +397,7 @@ function ReservationForm({ reservations, onAddReservation, disabled }) {
             </select>
           </label>
           <label>예약명
-            <input value={form.title} onChange={(event) => updateForm("title", event.target.value)} placeholder="예: 배추 팁번 촬영" />
+            <input value={form.title} onChange={(event) => updateForm("title", event.target.value)} placeholder="예: 배추 팁번 실험" />
           </label>
           <label>신청자/소속
             <input value={form.user} onChange={(event) => updateForm("user", event.target.value)} placeholder="예: 채소기초기반과 홍길동" />
@@ -416,8 +416,8 @@ function ReservationForm({ reservations, onAddReservation, disabled }) {
           {isImaging && (
             <label className="full">촬영 방식
               <select value={form.imagingMode} onChange={(event) => updateForm("imagingMode", event.target.value)}>
-                <option>재배시설 연계 촬영</option>
                 <option>독립 촬영</option>
+                <option>재배시설 연계 촬영</option>
               </select>
             </label>
           )}
@@ -807,7 +807,7 @@ export default function App() {
         <header className="header">
           <div>
             <p><strong>Phenotyping Facility Reservation System</strong></p>
-            <h1>표현체 연구시설 예약시스템</h1>
+            <h1>표현체 연구시설 예약 시스템</h1>
             <p>재배시설은 장기 재배 예약으로, 촬영시설은 시간 단위 예약으로 분리 관리합니다. 예약 데이터는 Supabase 공용 DB에 저장됩니다.</p>
             {loading && <p>예약 데이터를 불러오는 중입니다...</p>}
           </div>
