@@ -921,11 +921,9 @@ export default function App() {
             <ReservationForm reservations={reservationsState} onAddReservation={addReservation} disabled={!isSupabaseConfigured} isAdmin={isAdmin} initialCategory={reserveInitialCategory} />
             <div className="card rules">
               <h3>예약 운영 규칙</h3>
-              <p><strong>재배 예약</strong>은 작목, 재배기간, 처리조건, 식물체 수를 기준으로 승인합니다.</p>
-              <p><strong>촬영 예약</strong>은 촬영시설, 센서, 촬영시간, 연계 재배 예약 여부를 기준으로 승인합니다.</p>
-              <p>동일 시설·장비의 시간이 겹치면 저장되지 않습니다.</p>
-              <p>점검, 보정, 수리 일정도 중복 방지 대상에 포함됩니다.</p>
-              <p>예약 수정은 관리자에게 문의하세요.</p>
+              <p><strong>재배 예약</strong>과 <strong>촬영 예약</strong>은 별도로 신청해주세요.</p>
+              <p>동일 시설·장비의 예약/점검 일정이 겹치면 저장되지 않습니다.</p>
+              <p>예약 내용 변경은 관리자에게 문의하세요.</p>
             </div>
           </section>
         )}
@@ -971,7 +969,6 @@ export default function App() {
       </div>
 
       <footer className="footer-note">
-        <p> </p>
         <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
         <p>국립원예특작과학원 채소기초기반과</p>
         <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
