@@ -835,7 +835,7 @@ export default function App() {
         {viewMode === VIEW_MODE.USER && (
           <div className="user-layout">
             <div className="mode-tabs user-tabs">
-              <button type="button" onClick={() => setUserSection(USER_SECTION.OVERVIEW)} className={userSection === USER_SECTION.OVERVIEW ? "active" : ""}>예약현황</button>
+              <button type="button" onClick={() => setUserSection(USER_SECTION.OVERVIEW)} className={userSection === USER_SECTION.OVERVIEW ? "active" : ""}>시설현황</button>
               <button type="button" onClick={() => setUserSection(USER_SECTION.RESERVE)} className={userSection === USER_SECTION.RESERVE ? "active" : ""}>예약하기</button>
             </div>
 
