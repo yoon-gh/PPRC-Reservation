@@ -323,12 +323,20 @@ function FacilityCard({ item }) {
   );
 }
 
-function ReservationForm({ reservations, onAddReservation, disabled }) {
+function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = false, initialCategory = CATEGORY.IMAGING }) {
   const [form, setForm] = useState(defaultForm);
   const [message, setMessage] = useState(null);
   const selectableFacilities = getFacilitiesByCategory(form.category);
   const isImaging = form.category === CATEGORY.IMAGING;
   const isMaintenance = form.category === CATEGORY.MAINTENANCE;
+  const canSelectMaintenance = isAdmin;
+
+  useEffect(() => {
+    setForm((prev) => {
+      const facilities = getFacilitiesByCategory(initialCategory);
+      return { ...prev, category: initialCategory, facility: facilities[0]?.name || "" };
+    });
+  }, [initialCategory]);
 
   function updateForm(field, value) {
     if (field === "category") {
@@ -356,6 +364,11 @@ function ReservationForm({ reservations, onAddReservation, disabled }) {
       status: isMaintenance ? RESERVATION_STATUS.MAINTENANCE : RESERVATION_STATUS.PENDING,
       linked: isMaintenance ? "예약 불가" : isImaging ? form.imagingMode : "미연계",
     };
+
+    if (isMaintenance && !isAdmin) {
+      setMessage({ type: "error", text: "점검 예약 등록은 관리자만 가능합니다." });
+      return;
+    }
 
     const conflict = findReservationConflict(reservations, candidate);
     if (conflict) {
@@ -388,7 +401,7 @@ function ReservationForm({ reservations, onAddReservation, disabled }) {
             <select value={form.category} onChange={(event) => updateForm("category", event.target.value)}>
               <option value={CATEGORY.IMAGING}>촬영</option>
               <option value={CATEGORY.GROWTH}>재배</option>
-              <option value={CATEGORY.MAINTENANCE}>점검</option>
+              {canSelectMaintenance && <option value={CATEGORY.MAINTENANCE}>점검</option>}
             </select>
           </label>
           <label>예약 대상
@@ -731,6 +744,7 @@ export default function App() {
   const [reservationsState, setReservationsState] = useState([]);
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState(null);
+  const [reserveInitialCategory, setReserveInitialCategory] = useState(CATEGORY.IMAGING);
 
   const isAdmin = Boolean(session?.user?.email && adminEmails.includes(session.user.email.toLowerCase()));
 
@@ -784,6 +798,20 @@ export default function App() {
   const selectedMonthReservations = useMemo(() => filterReservationsByMonth(reservationsState, calendarMonth), [reservationsState, calendarMonth]);
   const filteredReservations = useMemo(() => filterReservationsByCategory(selectedMonthReservations, tab), [selectedMonthReservations, tab]);
   const reservationStats = useMemo(() => getReservationStats(selectedMonthReservations), [selectedMonthReservations]);
+  const todayFacilityStatusMap = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const map = new Map();
+    allFacilities.forEach((facility) => map.set(facility.name, FACILITY_STATUS.AVAILABLE));
+    reservationsState.forEach((reservation) => {
+      if (reservation.status === RESERVATION_STATUS.REJECTED) return;
+      if (!rangesOverlap(toDate(reservation.start), toDate(reservation.end), today, tomorrow)) return;
+      map.set(reservation.facility, FACILITY_STATUS.IN_USE);
+    });
+    return map;
+  }, [reservationsState]);
 
   const facilityStatusStats = useMemo(() => {
     return allFacilities.reduce((acc, facility) => {
@@ -823,14 +851,14 @@ export default function App() {
             <section className="user-growth-section">
               <SectionTitle icon={categoryIcon[CATEGORY.GROWTH]} title="재배시설" subtitle="기간 단위로 예약하고, 필요 시 촬영 예약과 연결합니다." />
               <div className="grid-5" style={{ marginTop: 14 }}>
-                {growthFacilities.map((item) => <FacilityCard key={item.id} item={item} />)}
+                {growthFacilities.map((item) => <FacilityCard key={item.id} item={{ ...item, status: todayFacilityStatusMap.get(item.name) || FACILITY_STATUS.AVAILABLE }} />)}
               </div>
             </section>
 
             <section className="user-imaging-section">
               <SectionTitle icon={categoryIcon[CATEGORY.IMAGING]} title="촬영시설 및 장비" subtitle="시간 단위 예약, 연계 촬영과 독립 촬영을 구분합니다." />
               <div className="grid-5" style={{ marginTop: 14 }}>
-                {imagingFacilities.map((item) => <FacilityCard key={item.id} item={item} />)}
+                {imagingFacilities.map((item) => <FacilityCard key={item.id} item={{ ...item, status: todayFacilityStatusMap.get(item.name) || FACILITY_STATUS.AVAILABLE }} />)}
               </div>
             </section>
           </div>
@@ -852,7 +880,7 @@ export default function App() {
 
         {page === PAGE.RESERVE && (
           <section className="two-col user-reservation-section">
-            <ReservationForm reservations={reservationsState} onAddReservation={addReservation} disabled={!isSupabaseConfigured} />
+            <ReservationForm reservations={reservationsState} onAddReservation={addReservation} disabled={!isSupabaseConfigured} isAdmin={isAdmin} initialCategory={reserveInitialCategory} />
             <div className="card rules">
               <h3>예약 운영 규칙</h3>
               <p><strong>재배 예약</strong>은 작목, 재배기간, 처리조건, 식물체 수를 기준으로 승인합니다.</p>
@@ -870,6 +898,15 @@ export default function App() {
             {isAdmin && (
               <>
                 <section className="dashboard">
+                  <div className="card stat">
+                    <div>
+                      <div className="label">점검 빠른 등록</div>
+                      <div className="helper">해당 월 점검 일정을 바로 등록합니다.</div>
+                    </div>
+                    <div className="actions">
+                      <Button type="button" onClick={() => { setReserveInitialCategory(CATEGORY.MAINTENANCE); setPage(PAGE.RESERVE); }}>🛠 점검 등록</Button>
+                    </div>
+                  </div>
                   {dashboardCards.map((card) => (
                     <div key={card.label} className="card stat">
                       <div>
