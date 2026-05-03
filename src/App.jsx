@@ -48,7 +48,7 @@ const categoryIcon = { all: "📅", growth: "🌱", imaging: "📷", maintenance
 
 const growthFacilities = [
   { id: "G-01", name: "컨베이어 온실", status: FACILITY_STATUS.AVAILABLE },
-  { id: "G-02", name: "XYZ 생장실", status: FACILITY_STATUS.IN_USE },
+  { id: "G-02", name: "XYZ 인공환경실", status: FACILITY_STATUS.IN_USE },
   { id: "G-03", name: "인공환경재배실 1", status: FACILITY_STATUS.AVAILABLE },
   { id: "G-04", name: "인공환경재배실 2", status: FACILITY_STATUS.AVAILABLE },
   { id: "G-05", name: "인공환경재배실 3", status: FACILITY_STATUS.AVAILABLE },
@@ -317,7 +317,7 @@ function FacilityCard({ item }) {
       <div>
         <small>{item.id}</small>
         <h3>{item.name}</h3>
-        {showSensorMemo && <div className="sensor-note">센서: {item.sensors.join(", ")}</div>}
+        {showSensorMemo && <div className="sensor-note"> {item.sensors.join(", ")}</div>}
       </div>
       <StatusBadge status={item.status} />
     </div>
@@ -380,7 +380,7 @@ function ReservationForm({ reservations, onAddReservation, disabled }) {
             <h3>예약 신청</h3>
             <p>동일 시설·장비의 시간 중복 여부를 확인한 뒤 저장합니다.</p>
           </div>
-          <Button type="submit" disabled={disabled}>＋ 신청 저장</Button>
+          <Button type="submit" disabled={disabled}>신청 저장</Button>
         </div>
         {message && <div className={`message ${message.type}`}>{message.text}</div>}
         {disabled && <div className="setup-note">Supabase 환경변수가 설정되지 않아 저장 기능이 비활성화되었습니다.</div>}
@@ -814,7 +814,7 @@ export default function App() {
             {loading && <p>예약 데이터를 불러오는 중입니다...</p>}
           </div>
           <div className="mode-tabs">
-            <button type="button" onClick={() => setViewMode(VIEW_MODE.USER)} className={viewMode === VIEW_MODE.USER ? "active" : ""}>예약현황</button>
+            <button type="button" onClick={() => setViewMode(VIEW_MODE.USER)} className={viewMode === VIEW_MODE.USER ? "active" : ""}>사용자</button>
             <button type="button" onClick={() => setViewMode(VIEW_MODE.ADMIN)} className={viewMode === VIEW_MODE.ADMIN ? "active" : ""}>관리자</button>
           </div>
         </header>
