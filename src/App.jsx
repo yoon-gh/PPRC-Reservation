@@ -70,8 +70,8 @@ const defaultForm = {
   user: "",
   crop: "",
   start: "2026-05-13T09:00",
-  end: "2026-05-13T10:00",
-  imagingMode: "재배시설 연계 촬영",
+  end: "2026-05-13T18:00",
+  imagingMode: "독립 촬영",
 };
 
 const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || "")
