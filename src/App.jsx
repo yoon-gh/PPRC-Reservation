@@ -33,6 +33,7 @@ const CATEGORY_LABEL = Object.freeze({
 });
 
 const VIEW_MODE = Object.freeze({ USER: "user", ADMIN: "admin" });
+const USER_SECTION = Object.freeze({ OVERVIEW: "overview", RESERVE: "reserve" });
 
 const STATUS_CLASS = {
   available: "available-badge",
@@ -727,6 +728,7 @@ function AdminReservationPanel({ reservations, selectedMonthReservations, onUpda
 export default function App() {
   const [tab, setTab] = useState(CATEGORY.ALL);
   const [viewMode, setViewMode] = useState(VIEW_MODE.USER);
+  const [userSection, setUserSection] = useState(USER_SECTION.OVERVIEW);
   const [calendarMonth, setCalendarMonth] = useState(new Date(2026, 4, 1));
   const [reservationsState, setReservationsState] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -812,7 +814,7 @@ export default function App() {
             {loading && <p>예약 데이터를 불러오는 중입니다...</p>}
           </div>
           <div className="mode-tabs">
-            <button type="button" onClick={() => setViewMode(VIEW_MODE.USER)} className={viewMode === VIEW_MODE.USER ? "active" : ""}>사용자</button>
+            <button type="button" onClick={() => setViewMode(VIEW_MODE.USER)} className={viewMode === VIEW_MODE.USER ? "active" : ""}>예약현황</button>
             <button type="button" onClick={() => setViewMode(VIEW_MODE.ADMIN)} className={viewMode === VIEW_MODE.ADMIN ? "active" : ""}>관리자</button>
           </div>
         </header>
@@ -832,30 +834,60 @@ export default function App() {
 
         {viewMode === VIEW_MODE.USER && (
           <div className="user-layout">
-            <section className="user-growth-section">
-              <SectionTitle icon={categoryIcon[CATEGORY.GROWTH]} title="재배시설" subtitle="기간 단위로 예약하고, 필요 시 촬영 예약과 연결합니다." />
-              <div className="grid-5" style={{ marginTop: 14 }}>
-                {growthFacilities.map((item) => <FacilityCard key={item.id} item={item} />)}
-              </div>
-            </section>
+            <div className="mode-tabs user-tabs">
+              <button type="button" onClick={() => setUserSection(USER_SECTION.OVERVIEW)} className={userSection === USER_SECTION.OVERVIEW ? "active" : ""}>예약현황</button>
+              <button type="button" onClick={() => setUserSection(USER_SECTION.RESERVE)} className={userSection === USER_SECTION.RESERVE ? "active" : ""}>예약하기</button>
+            </div>
 
-            <section className="user-imaging-section">
-              <SectionTitle icon={categoryIcon[CATEGORY.IMAGING]} title="촬영시설 및 장비" subtitle="시간 단위 예약, 연계 촬영과 독립 촬영을 구분합니다." />
-              <div className="grid-5" style={{ marginTop: 14 }}>
-                {imagingFacilities.map((item) => <FacilityCard key={item.id} item={item} />)}
-              </div>
-            </section>
+            {userSection === USER_SECTION.OVERVIEW && (
+              <>
+                <section className="user-growth-section">
+                  <SectionTitle icon={categoryIcon[CATEGORY.GROWTH]} title="재배시설" subtitle="기간 단위로 예약하고, 필요 시 촬영 예약과 연결합니다." />
+                  <div className="grid-5" style={{ marginTop: 14 }}>
+                    {growthFacilities.map((item) => <FacilityCard key={item.id} item={item} />)}
+                  </div>
+                </section>
 
-            <section className="two-col user-reservation-section">
-              <ReservationForm reservations={reservationsState} onAddReservation={addReservation} disabled={!isSupabaseConfigured} />
-              <div className="card rules">
-                <h3>예약 운영 규칙</h3>
-                <p><strong>재배 예약</strong>은 작목, 재배기간, 처리조건, 식물체 수를 기준으로 승인합니다.</p>
-                <p><strong>촬영 예약</strong>은 촬영시설, 센서, 촬영시간, 연계 재배 예약 여부를 기준으로 승인합니다.</p>
-                <p>동일 시설·장비의 시간이 겹치면 저장되지 않습니다.</p>
-                <p>점검, 보정, 수리 일정도 중복 방지 대상에 포함됩니다.</p>
-              </div>
-            </section>
+                <section className="user-imaging-section">
+                  <SectionTitle icon={categoryIcon[CATEGORY.IMAGING]} title="촬영시설 및 장비" subtitle="시간 단위 예약, 연계 촬영과 독립 촬영을 구분합니다." />
+                  <div className="grid-5" style={{ marginTop: 14 }}>
+                    {imagingFacilities.map((item) => <FacilityCard key={item.id} item={item} />)}
+                  </div>
+                </section>
+
+                <section>
+                  <div className="filter-row">
+                    {[CATEGORY.ALL, CATEGORY.GROWTH, CATEGORY.IMAGING, CATEGORY.MAINTENANCE].map((name) => (
+                      <button key={name} type="button" onClick={() => setTab(name)} className={`chip ${tab === name ? "active" : ""}`}>{getCategoryLabel(name)}</button>
+                    ))}
+                  </div>
+                </section>
+                <MonthlyCalendar reservations={reservationsState} selectedCategory={tab} month={calendarMonth} onMonthChange={setCalendarMonth} />
+              </>
+            )}
+
+            {userSection === USER_SECTION.RESERVE && (
+              <>
+                <section className="two-col user-reservation-section">
+                  <ReservationForm reservations={reservationsState} onAddReservation={addReservation} disabled={!isSupabaseConfigured} />
+                  <div className="card rules">
+                    <h3>예약 운영 규칙</h3>
+                    <p><strong>재배 예약</strong>은 작목, 재배기간, 처리조건, 식물체 수를 기준으로 승인합니다.</p>
+                    <p><strong>촬영 예약</strong>은 촬영시설, 센서, 촬영시간, 연계 재배 예약 여부를 기준으로 승인합니다.</p>
+                    <p>동일 시설·장비의 시간이 겹치면 저장되지 않습니다.</p>
+                    <p>점검, 보정, 수리 일정도 중복 방지 대상에 포함됩니다.</p>
+                  </div>
+                </section>
+                <section>
+                  <div className="filter-row">
+                    {[CATEGORY.ALL, CATEGORY.GROWTH, CATEGORY.IMAGING, CATEGORY.MAINTENANCE].map((name) => (
+                      <button key={name} type="button" onClick={() => setTab(name)} className={`chip ${tab === name ? "active" : ""}`}>{getCategoryLabel(name)}</button>
+                    ))}
+                  </div>
+                </section>
+                <ReservationTable reservations={filteredReservations} />
+              </>
+            )}
           </div>
         )}
 
@@ -873,16 +905,6 @@ export default function App() {
           </>
         )}
 
-        <section>
-          <div className="filter-row">
-            {[CATEGORY.ALL, CATEGORY.GROWTH, CATEGORY.IMAGING, CATEGORY.MAINTENANCE].map((name) => (
-              <button key={name} type="button" onClick={() => setTab(name)} className={`chip ${tab === name ? "active" : ""}`}>{getCategoryLabel(name)}</button>
-            ))}
-          </div>
-        </section>
-
-        <MonthlyCalendar reservations={reservationsState} selectedCategory={tab} month={calendarMonth} onMonthChange={setCalendarMonth} />
-        <ReservationTable reservations={filteredReservations} />
       </div>
     </div>
   );
