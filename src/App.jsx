@@ -56,9 +56,9 @@ const growthFacilities = [
 const imagingFacilities = [
   { id: "I-01", name: "컨베이어 엽록소형광", sensors: ["엽록소형광"], status: FACILITY_STATUS.AVAILABLE },
   { id: "I-02", name: "컨베이어 다중영상촬영", sensors: ["다분광", "열화상", "LiDAR"], status: FACILITY_STATUS.AVAILABLE },
-  { id: "I-03", name: "XYZ 다중영상촬영실", sensors: ["다분광", "초분광", "열화상"], status: FACILITY_STATUS.IN_USE },
-  { id: "I-04", name: "소형 초분광 촬영실", sensors: ["초분광"], status: FACILITY_STATUS.AVAILABLE },
-  { id: "I-05", name: "소형 다분광 촬영실", sensors: ["다분광"], status: FACILITY_STATUS.AVAILABLE },
+  { id: "I-03", name: "XYZ 다중영상촬영", sensors: ["다분광", "초분광", "열화상"], status: FACILITY_STATUS.IN_USE },
+  { id: "I-04", name: "소형 초분광 촬영", sensors: ["초분광"], status: FACILITY_STATUS.AVAILABLE },
+  { id: "I-05", name: "소형 다분광 촬영", sensors: ["다분광"], status: FACILITY_STATUS.AVAILABLE },
 ];
 
 const allFacilities = [...growthFacilities, ...imagingFacilities];
@@ -310,7 +310,7 @@ function SectionTitle({ icon, title, subtitle }) {
 }
 
 function FacilityCard({ item }) {
-  const showSensorMemo = item.name.includes("다중영상촬영실") && Array.isArray(item.sensors);
+  const showSensorMemo = item.name.includes("다중영상촬영") && Array.isArray(item.sensors);
   return (
     <div className={`card facility ${item.status}`}>
       <div className="facility-top">
