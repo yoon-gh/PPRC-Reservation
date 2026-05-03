@@ -738,8 +738,6 @@ export default function App() {
     async function init() {
       if (!isSupabaseConfigured || !supabase) return;
       setLoading(true);
-      const { data: sessionData } = await supabase.auth.getSession();
-      setSession(sessionData.session);
       const { data, error } = await supabase.from("reservations").select("*").order("created_at", { ascending: true });
       if (!error && data) setReservationsState(data.map(mapDbToReservation));
       setLoading(false);
