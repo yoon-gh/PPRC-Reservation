@@ -313,12 +313,14 @@ function FacilityCard({ item }) {
   const showSensorMemo = item.name.includes("다중영상촬영실") && Array.isArray(item.sensors);
   return (
     <div className={`card facility ${item.status}`}>
-      <div>
+      <div className="facility-top">
         <small>{item.id}</small>
+        <StatusBadge status={item.status} />
+      </div>
+      <div>
         <h3>{item.name}</h3>
         {showSensorMemo && <div className="sensor-note"> {item.sensors.join(", ")}</div>}
       </div>
-      <StatusBadge status={item.status} />
     </div>
   );
 }
@@ -824,7 +826,6 @@ export default function App() {
     { label: "해당 월 전체 예약", value: reservationStats.total, icon: categoryIcon[CATEGORY.ALL], helper: `${calendarMonth.getFullYear()}년 ${calendarMonth.getMonth() + 1}월 기준` },
     { label: "사용 가능 시설", value: facilityStatusStats[FACILITY_STATUS.AVAILABLE] || 0, icon: "🟢", helper: "현재 예약 가능 상태" },
     { label: "사용 중 시설", value: facilityStatusStats[FACILITY_STATUS.IN_USE] || 0, icon: "🔵", helper: "현재 사용 중" },
-    { label: "해당 월 점검 등록", value: reservationStats.maintenance, icon: "🛠", helper: "관리자가 등록한 점검 일정" },
   ];
 
   return (
