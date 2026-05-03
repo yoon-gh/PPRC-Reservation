@@ -888,6 +888,7 @@ export default function App() {
               <p><strong>촬영 예약</strong>은 촬영시설, 센서, 촬영시간, 연계 재배 예약 여부를 기준으로 승인합니다.</p>
               <p>동일 시설·장비의 시간이 겹치면 저장되지 않습니다.</p>
               <p>점검, 보정, 수리 일정도 중복 방지 대상에 포함됩니다.</p>
+              <p>예약 수정은 관리자에게 문의하세요.</p>
             </div>
           </section>
         )}
@@ -899,15 +900,6 @@ export default function App() {
             {isAdmin && (
               <>
                 <section className="dashboard">
-                  <div className="card stat">
-                    <div>
-                      <div className="label">점검 빠른 등록</div>
-                      <div className="helper">해당 월 점검 일정을 바로 등록합니다.</div>
-                    </div>
-                    <div className="actions">
-                      <Button type="button" onClick={() => { setReserveInitialCategory(CATEGORY.MAINTENANCE); setPage(PAGE.RESERVE); }}>🛠 점검 등록</Button>
-                    </div>
-                  </div>
                   {dashboardCards.map((card) => (
                     <div key={card.label} className="card stat">
                       <div>
@@ -918,6 +910,15 @@ export default function App() {
                       <div className="icon">{card.icon}</div>
                     </div>
                   ))}
+                  <div className="card stat">
+                    <div>
+                      <div className="label">점검 빠른 등록</div>
+                      <div className="helper">해당 월 점검 일정을 바로 등록합니다.</div>
+                    </div>
+                    <div className="actions">
+                      <Button type="button" onClick={() => { setReserveInitialCategory(CATEGORY.MAINTENANCE); setPage(PAGE.RESERVE); }}>🛠 점검 등록</Button>
+                    </div>
+                  </div>
                 </section>
                 <AdminReservationPanel
                 reservations={reservationsState}
