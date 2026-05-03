@@ -1,17 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 
-const FACILITY_STATUS = Object.freeze({
-  AVAILABLE: "available",
-  IN_USE: "in_use",
-  MAINTENANCE_SOON: "maintenance_soon",
-});
-
-const FACILITY_STATUS_LABEL = Object.freeze({
-  [FACILITY_STATUS.AVAILABLE]: "사용 가능",
-  [FACILITY_STATUS.IN_USE]: "사용 중",
-  [FACILITY_STATUS.MAINTENANCE_SOON]: "점검 예정",
-});
+const FACILITY_STATUS = Object.freeze({ AVAILABLE: "available", IN_USE: "in_use" });
+const FACILITY_STATUS_LABEL = Object.freeze({ available: "사용 가능", in_use: "사용 중" });
 
 const RESERVATION_STATUS = Object.freeze({
   APPROVED: "approved",
@@ -21,10 +12,10 @@ const RESERVATION_STATUS = Object.freeze({
 });
 
 const RESERVATION_STATUS_LABEL = Object.freeze({
-  [RESERVATION_STATUS.APPROVED]: "승인완료",
-  [RESERVATION_STATUS.PENDING]: "승인대기",
-  [RESERVATION_STATUS.MAINTENANCE]: "점검",
-  [RESERVATION_STATUS.REJECTED]: "반려",
+  approved: "승인완료",
+  pending: "승인대기",
+  maintenance: "점검",
+  rejected: "반려",
 });
 
 const CATEGORY = Object.freeze({
@@ -35,39 +26,30 @@ const CATEGORY = Object.freeze({
 });
 
 const CATEGORY_LABEL = Object.freeze({
-  [CATEGORY.ALL]: "전체",
-  [CATEGORY.GROWTH]: "재배",
-  [CATEGORY.IMAGING]: "촬영",
-  [CATEGORY.MAINTENANCE]: "점검",
+  all: "전체",
+  growth: "재배",
+  imaging: "촬영",
+  maintenance: "점검",
 });
 
-const VIEW_MODE = Object.freeze({
-  USER: "user",
-  ADMIN: "admin",
-});
+const VIEW_MODE = Object.freeze({ USER: "user", ADMIN: "admin" });
 
 const STATUS_CLASS = {
-  [FACILITY_STATUS.AVAILABLE]: "available-badge",
-  [FACILITY_STATUS.IN_USE]: "in_use-badge",
-  [FACILITY_STATUS.MAINTENANCE_SOON]: "maintenance_soon-badge",
-  [RESERVATION_STATUS.APPROVED]: "approved-badge",
-  [RESERVATION_STATUS.PENDING]: "pending-badge",
-  [RESERVATION_STATUS.MAINTENANCE]: "maintenance-badge",
-  [RESERVATION_STATUS.REJECTED]: "rejected-badge",
+  available: "available-badge",
+  in_use: "in_use-badge",
+  approved: "approved-badge",
+  pending: "pending-badge",
+  maintenance: "maintenance-badge",
+  rejected: "rejected-badge",
 };
 
-const categoryIcon = {
-  [CATEGORY.ALL]: "📅",
-  [CATEGORY.GROWTH]: "🌱",
-  [CATEGORY.IMAGING]: "📷",
-  [CATEGORY.MAINTENANCE]: "🛠",
-};
+const categoryIcon = { all: "📅", growth: "🌱", imaging: "📷", maintenance: "🛠" };
 
 const growthFacilities = [
   { id: "G-01", name: "컨베이어 온실", status: FACILITY_STATUS.AVAILABLE },
   { id: "G-02", name: "XYZ 생장실", status: FACILITY_STATUS.IN_USE },
   { id: "G-03", name: "인공환경재배실 1", status: FACILITY_STATUS.AVAILABLE },
-  { id: "G-04", name: "인공환경재배실 2", status: FACILITY_STATUS.MAINTENANCE_SOON },
+  { id: "G-04", name: "인공환경재배실 2", status: FACILITY_STATUS.AVAILABLE },
   { id: "G-05", name: "인공환경재배실 3", status: FACILITY_STATUS.AVAILABLE },
 ];
 
@@ -76,37 +58,10 @@ const imagingFacilities = [
   { id: "I-02", name: "컨베이어 다중영상촬영실", sensors: ["다분광", "열화상", "LiDAR"], status: FACILITY_STATUS.AVAILABLE },
   { id: "I-03", name: "XYZ 다중영상촬영실", sensors: ["다분광", "초분광", "열화상"], status: FACILITY_STATUS.IN_USE },
   { id: "I-04", name: "소형 초분광 촬영실", sensors: ["초분광"], status: FACILITY_STATUS.AVAILABLE },
-  { id: "I-05", name: "소형 다분광 촬영실", sensors: ["다분광"], status: FACILITY_STATUS.MAINTENANCE_SOON },
+  { id: "I-05", name: "소형 다분광 촬영실", sensors: ["다분광"], status: FACILITY_STATUS.AVAILABLE },
 ];
 
 const allFacilities = [...growthFacilities, ...imagingFacilities];
-
-const demoReservations = [
-  {
-    id: "demo-101",
-    category: CATEGORY.GROWTH,
-    facility: "컨베이어 온실",
-    title: "배추 팁번 유도 실험",
-    crop: "배추",
-    user: "채소기초기반과",
-    start: "2026-05-01T09:00",
-    end: "2026-06-10T18:00",
-    status: RESERVATION_STATUS.APPROVED,
-    linked: "컨베이어 촬영 예정",
-  },
-  {
-    id: "demo-201",
-    category: CATEGORY.IMAGING,
-    facility: "XYZ 다중영상촬영실",
-    title: "딸기 생육 영상 촬영",
-    crop: "딸기",
-    user: "표현체 분석팀",
-    start: "2026-05-13T10:00",
-    end: "2026-05-13T12:00",
-    status: RESERVATION_STATUS.APPROVED,
-    linked: "XYZ 생장실 재배 예약 연계",
-  },
-];
 
 const defaultForm = {
   category: CATEGORY.IMAGING,
@@ -137,18 +92,13 @@ function toDate(value) {
 }
 
 function dateKey(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function formatDateTime(value) {
   const date = toDate(value);
   if (!date || Number.isNaN(date.getTime())) return "-";
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${dateKey(date)} ${hh}:${mm}`;
+  return `${dateKey(date)} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function formatPeriod(reservation) {
@@ -163,9 +113,7 @@ function formatTime(reservation) {
   const end = toDate(reservation.end);
   if (!start || !end) return "-";
   if (reservation.category === CATEGORY.GROWTH) return "장기 재배";
-  const s = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
-  const e = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
-  return `${s}–${e}`;
+  return `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}–${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
 }
 
 function getFacilitiesByCategory(category) {
@@ -184,9 +132,9 @@ function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && bStart < aEnd;
 }
 
-function filterReservationsByMonth(reservations, monthDate) {
-  const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1, 0, 0, 0, 0);
-  const end = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1, 0, 0, 0, 0);
+function filterReservationsByMonth(reservations, month) {
+  const start = new Date(month.getFullYear(), month.getMonth(), 1);
+  const end = new Date(month.getFullYear(), month.getMonth() + 1, 1);
   return reservations.filter((reservation) => rangesOverlap(toDate(reservation.start), toDate(reservation.end), start, end));
 }
 
@@ -209,11 +157,11 @@ function findReservationConflict(reservations, candidate, ignoreId = null) {
   const candidateEnd = toDate(candidate.end);
 
   if (!candidateStart || !candidateEnd || Number.isNaN(candidateStart.getTime()) || Number.isNaN(candidateEnd.getTime())) {
-    return { type: "invalid", message: "시작/종료 일시를 올바르게 입력해 주세요." };
+    return { message: "시작/종료 일시를 올바르게 입력해 주세요." };
   }
 
   if (candidateStart >= candidateEnd) {
-    return { type: "invalid", message: "종료 일시는 시작 일시보다 늦어야 합니다." };
+    return { message: "종료 일시는 시작 일시보다 늦어야 합니다." };
   }
 
   const conflict = reservations.find((reservation) => {
@@ -223,19 +171,20 @@ function findReservationConflict(reservations, candidate, ignoreId = null) {
     return rangesOverlap(candidateStart, candidateEnd, toDate(reservation.start), toDate(reservation.end));
   });
 
-  if (!conflict) return null;
-  return { type: "overlap", message: `중복 예약: ${conflict.title} (${formatDateTime(conflict.start)} ~ ${formatDateTime(conflict.end)})` };
+  return conflict ? { message: `중복 예약: ${conflict.title} (${formatDateTime(conflict.start)} ~ ${formatDateTime(conflict.end)})` } : null;
 }
 
 function getCalendarDays(year, monthIndex) {
   const first = new Date(year, monthIndex, 1);
   const start = new Date(year, monthIndex, 1 - first.getDay());
   const days = [];
+
   for (let i = 0; i < 42; i += 1) {
     const day = new Date(start);
     day.setDate(start.getDate() + i);
     days.push({ date: day, key: dateKey(day), inMonth: day.getMonth() === monthIndex });
   }
+
   return { days, label: `${year}년 ${monthIndex + 1}월` };
 }
 
@@ -258,6 +207,7 @@ function groupReservationsByDay(reservations, month) {
 
     const cursor = new Date(start);
     cursor.setHours(0, 0, 0, 0);
+
     const final = new Date(end);
     final.setHours(0, 0, 0, 0);
 
@@ -298,9 +248,8 @@ function buildReservationsCsv(reservations) {
   return [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
 }
 
-function downloadReservationsCsv(reservations, filename = "phenotyping_reservations.csv") {
-  const csv = buildReservationsCsv(reservations);
-  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+function downloadReservationsCsv(reservations, filename = "pprc_reservations.csv") {
+  const blob = new Blob(["\ufeff" + buildReservationsCsv(reservations)], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -339,19 +288,6 @@ function mapReservationToDb(reservation) {
     linked: reservation.linked,
   };
 }
-
-function runPrototypeTests() {
-  console.assert(getStatusLabel(RESERVATION_STATUS.PENDING) === "승인대기", "예약 상태 라벨 변환 실패");
-  console.assert(getCategoryLabel(CATEGORY.IMAGING) === "촬영", "카테고리 라벨 변환 실패");
-  console.assert(rangesOverlap(new Date("2026-05-13T10:00"), new Date("2026-05-13T11:00"), new Date("2026-05-13T10:30"), new Date("2026-05-13T12:00")) === true, "겹치는 시간 탐지 실패");
-  console.assert(rangesOverlap(new Date("2026-05-13T08:00"), new Date("2026-05-13T09:00"), new Date("2026-05-13T09:00"), new Date("2026-05-13T10:00")) === false, "맞닿은 시간은 중복이 아니어야 함");
-  console.assert(findReservationConflict(demoReservations, { facility: "XYZ 다중영상촬영실", start: "2026-05-13T11:00", end: "2026-05-13T12:30" })?.type === "overlap", "중복 예약 탐지 실패");
-  console.assert(filterReservationsByMonth(demoReservations, new Date(2026, 4, 1)).length === 2, "월간 예약 필터 실패");
-  console.assert(getCalendarDays(2026, 4).days.length === 42, "캘린더 42칸 생성 실패");
-  console.assert(buildReservationsCsv(demoReservations).includes("\n"), "CSV 줄바꿈 생성 실패");
-}
-
-runPrototypeTests();
 
 function StatusBadge({ status }) {
   return <span className={`badge ${STATUS_CLASS[status] || ""}`}>{getStatusLabel(status)}</span>;
@@ -407,6 +343,7 @@ function ReservationForm({ reservations, onAddReservation, disabled }) {
 
   async function submitReservation(event) {
     event.preventDefault();
+
     const candidate = {
       id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`,
       category: form.category,
@@ -448,37 +385,37 @@ function ReservationForm({ reservations, onAddReservation, disabled }) {
         {disabled && <div className="setup-note">Supabase 환경변수가 설정되지 않아 저장 기능이 비활성화되었습니다.</div>}
         <div className="form-grid">
           <label>예약 구분
-            <select value={form.category} onChange={(e) => updateForm("category", e.target.value)}>
-              <option value={CATEGORY.IMAGING}>{getCategoryLabel(CATEGORY.IMAGING)}</option>
-              <option value={CATEGORY.GROWTH}>{getCategoryLabel(CATEGORY.GROWTH)}</option>
-              <option value={CATEGORY.MAINTENANCE}>{getCategoryLabel(CATEGORY.MAINTENANCE)}</option>
+            <select value={form.category} onChange={(event) => updateForm("category", event.target.value)}>
+              <option value={CATEGORY.IMAGING}>촬영</option>
+              <option value={CATEGORY.GROWTH}>재배</option>
+              <option value={CATEGORY.MAINTENANCE}>점검</option>
             </select>
           </label>
           <label>예약 대상
-            <select value={form.facility} onChange={(e) => updateForm("facility", e.target.value)}>
+            <select value={form.facility} onChange={(event) => updateForm("facility", event.target.value)}>
               {selectableFacilities.map((facility) => <option key={facility.id} value={facility.name}>{facility.name}</option>)}
             </select>
           </label>
           <label>예약명
-            <input value={form.title} onChange={(e) => updateForm("title", e.target.value)} placeholder="예: 배추 팁번 촬영" />
+            <input value={form.title} onChange={(event) => updateForm("title", event.target.value)} placeholder="예: 배추 팁번 촬영" />
           </label>
           <label>신청자/소속
-            <input value={form.user} onChange={(e) => updateForm("user", e.target.value)} placeholder="예: 채소기초기반과 홍길동" />
+            <input value={form.user} onChange={(event) => updateForm("user", event.target.value)} placeholder="예: 채소기초기반과 홍길동" />
           </label>
           {!isMaintenance && (
             <label className="full">작목
-              <input value={form.crop} onChange={(e) => updateForm("crop", e.target.value)} placeholder="예: 배추, 딸기, 고추" />
+              <input value={form.crop} onChange={(event) => updateForm("crop", event.target.value)} placeholder="예: 배추, 딸기, 고추" />
             </label>
           )}
           <label>시작 일시
-            <input value={form.start} onChange={(e) => updateForm("start", e.target.value)} type="datetime-local" />
+            <input value={form.start} onChange={(event) => updateForm("start", event.target.value)} type="datetime-local" />
           </label>
           <label>종료 일시
-            <input value={form.end} onChange={(e) => updateForm("end", e.target.value)} type="datetime-local" />
+            <input value={form.end} onChange={(event) => updateForm("end", event.target.value)} type="datetime-local" />
           </label>
           {isImaging && (
             <label className="full">촬영 방식
-              <select value={form.imagingMode} onChange={(e) => updateForm("imagingMode", e.target.value)}>
+              <select value={form.imagingMode} onChange={(event) => updateForm("imagingMode", event.target.value)}>
                 <option>재배시설 연계 촬영</option>
                 <option>독립 촬영</option>
               </select>
@@ -502,7 +439,7 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
   return (
     <div className="card calendar-card">
       <div className="calendar-head">
-        <div className="calendar-copy">
+        <div>
           <h3>월간 캘린더</h3>
           <p>선택한 구분의 예약을 월 단위로 표시합니다.</p>
         </div>
@@ -655,15 +592,15 @@ function AdminLogin({ session, onLogin, onLogout, isAdmin }) {
   return (
     <div className="card login-card">
       <h3>관리자 로그인</h3>
-      {!isSupabaseConfigured && <div className="setup-note">`.env.local`에 Supabase URL과 Anon Key를 먼저 설정해야 합니다.</div>}
-      {adminEmails.length === 0 && <div className="setup-note">`.env.local`의 VITE_ADMIN_EMAILS에 관리자 이메일을 입력해야 합니다.</div>}
+      {!isSupabaseConfigured && <div className="setup-note">.env.local에 Supabase URL과 Anon Key를 설정해야 합니다.</div>}
+      {adminEmails.length === 0 && <div className="setup-note">VITE_ADMIN_EMAILS에 관리자 이메일을 입력해야 합니다.</div>}
       {message && <div className={`message ${message.type}`}>{message.text}</div>}
       <form onSubmit={submit} className="form-grid" style={{ gridTemplateColumns: "1fr" }}>
         <label>관리자 이메일
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com" />
+          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="admin@example.com" />
         </label>
         <label>비밀번호
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
         </label>
         <Button type="submit" disabled={!isSupabaseConfigured || adminEmails.length === 0}>로그인</Button>
       </form>
@@ -699,11 +636,13 @@ function AdminReservationPanel({ reservations, selectedMonthReservations, onUpda
       setMessage({ type: "error", text: conflict.message });
       return;
     }
+
     const result = await onUpdateReservation(draft.id, draft);
     if (result?.error) {
       setMessage({ type: "error", text: result.error });
       return;
     }
+
     setMessage({ type: "success", text: "예약 정보가 수정되었습니다." });
     setEditingId(null);
     setDraft(null);
@@ -720,10 +659,10 @@ function AdminReservationPanel({ reservations, selectedMonthReservations, onUpda
           <h3>관리자 예약 승인·수정</h3>
           <p>전체 예약을 수정할 수 있으며, 다운로드는 현재 캘린더 월에 해당하는 예약만 내려받습니다.</p>
         </div>
-        <Button type="button" variant="light" onClick={() => downloadReservationsCsv(selectedMonthReservations, "phenotyping_reservations_current_month.csv")}>엑셀용 CSV 다운로드</Button>
+        <Button type="button" variant="light" onClick={() => downloadReservationsCsv(selectedMonthReservations, "pprc_reservations_current_month.csv")}>엑셀용 CSV 다운로드</Button>
       </div>
       {message && <div className={`message ${message.type}`} style={{ margin: 16 }}>{message.text}</div>}
-      <div className="table-wrap">
+      <div className="table-wrap admin-table-wrap">
         <table className="admin-table">
           <thead>
             <tr>
@@ -739,13 +678,13 @@ function AdminReservationPanel({ reservations, selectedMonthReservations, onUpda
               return (
                 <tr key={reservation.id}>
                   <td>{isEditing ? (
-                    <select value={row.status} onChange={(e) => updateDraft("status", e.target.value)}>
+                    <select value={row.status} onChange={(event) => updateDraft("status", event.target.value)}>
                       {Object.values(RESERVATION_STATUS).map((status) => <option key={status} value={status}>{getStatusLabel(status)}</option>)}
                     </select>
                   ) : <StatusBadge status={reservation.status} />}</td>
                   <td>{isEditing ? (
-                    <select value={row.category} onChange={(e) => {
-                      const nextCategory = e.target.value;
+                    <select value={row.category} onChange={(event) => {
+                      const nextCategory = event.target.value;
                       const firstFacility = getFacilitiesByCategory(nextCategory)[0]?.name || "";
                       setDraft((prev) => ({ ...prev, category: nextCategory, facility: firstFacility }));
                     }}>
@@ -753,30 +692,28 @@ function AdminReservationPanel({ reservations, selectedMonthReservations, onUpda
                     </select>
                   ) : getCategoryLabel(reservation.category)}</td>
                   <td>{isEditing ? (
-                    <select value={row.facility} onChange={(e) => updateDraft("facility", e.target.value)}>
+                    <select value={row.facility} onChange={(event) => updateDraft("facility", event.target.value)}>
                       {facilities.map((facility) => <option key={facility.id} value={facility.name}>{facility.name}</option>)}
                     </select>
                   ) : reservation.facility}</td>
-                  <td>{isEditing ? <input value={row.title} onChange={(e) => updateDraft("title", e.target.value)} /> : <strong>{reservation.title}</strong>}</td>
-                  <td>{isEditing ? <input value={row.crop} onChange={(e) => updateDraft("crop", e.target.value)} /> : reservation.crop}</td>
-                  <td>{isEditing ? <input value={row.user} onChange={(e) => updateDraft("user", e.target.value)} /> : reservation.user}</td>
-                  <td>{isEditing ? <input type="datetime-local" value={row.start} onChange={(e) => updateDraft("start", e.target.value)} /> : formatDateTime(reservation.start)}</td>
-                  <td>{isEditing ? <input type="datetime-local" value={row.end} onChange={(e) => updateDraft("end", e.target.value)} /> : formatDateTime(reservation.end)}</td>
-                  <td>
-                    {isEditing ? (
-                      <div className="actions">
-                        <Button type="button" onClick={saveDraft}>저장</Button>
-                        <Button type="button" variant="light" onClick={cancelEdit}>취소</Button>
-                      </div>
-                    ) : (
-                      <div className="actions">
-                        {reservation.status === RESERVATION_STATUS.PENDING && <Button type="button" onClick={() => quickStatus(reservation.id, RESERVATION_STATUS.APPROVED)}>승인</Button>}
-                        {reservation.status === RESERVATION_STATUS.PENDING && <Button type="button" variant="light" onClick={() => quickStatus(reservation.id, RESERVATION_STATUS.REJECTED)}>반려</Button>}
-                        <Button type="button" variant="light" onClick={() => startEdit(reservation)}>수정</Button>
-                        <Button type="button" variant="danger" onClick={() => onDeleteReservation(reservation.id)}>삭제</Button>
-                      </div>
-                    )}
-                  </td>
+                  <td>{isEditing ? <input value={row.title} onChange={(event) => updateDraft("title", event.target.value)} /> : <strong>{reservation.title}</strong>}</td>
+                  <td>{isEditing ? <input value={row.crop} onChange={(event) => updateDraft("crop", event.target.value)} /> : reservation.crop}</td>
+                  <td>{isEditing ? <input value={row.user} onChange={(event) => updateDraft("user", event.target.value)} /> : reservation.user}</td>
+                  <td>{isEditing ? <input type="datetime-local" value={row.start} onChange={(event) => updateDraft("start", event.target.value)} /> : formatDateTime(reservation.start)}</td>
+                  <td>{isEditing ? <input type="datetime-local" value={row.end} onChange={(event) => updateDraft("end", event.target.value)} /> : formatDateTime(reservation.end)}</td>
+                  <td>{isEditing ? (
+                    <div className="actions">
+                      <Button type="button" onClick={saveDraft}>저장</Button>
+                      <Button type="button" variant="light" onClick={cancelEdit}>취소</Button>
+                    </div>
+                  ) : (
+                    <div className="actions">
+                      {reservation.status === RESERVATION_STATUS.PENDING && <Button type="button" onClick={() => quickStatus(reservation.id, RESERVATION_STATUS.APPROVED)}>승인</Button>}
+                      {reservation.status === RESERVATION_STATUS.PENDING && <Button type="button" variant="light" onClick={() => quickStatus(reservation.id, RESERVATION_STATUS.REJECTED)}>반려</Button>}
+                      <Button type="button" variant="light" onClick={() => startEdit(reservation)}>수정</Button>
+                      <Button type="button" variant="danger" onClick={() => onDeleteReservation(reservation.id)}>삭제</Button>
+                    </div>
+                  )}</td>
                 </tr>
               );
             })}
@@ -846,23 +783,6 @@ export default function App() {
     setSession(null);
   }
 
-  async function loadDemoData() {
-    if (!isSupabaseConfigured || !supabase) {
-      setReservationsState(demoReservations);
-      return;
-    }
-
-    for (const reservation of demoReservations) {
-      const exists = findReservationConflict(reservationsState, reservation);
-      if (!exists) {
-        await supabase.from("reservations").insert(mapReservationToDb(reservation));
-      }
-    }
-
-    const { data } = await supabase.from("reservations").select("*").order("created_at", { ascending: true });
-    if (data) setReservationsState(data.map(mapDbToReservation));
-  }
-
   const selectedMonthReservations = useMemo(() => filterReservationsByMonth(reservationsState, calendarMonth), [reservationsState, calendarMonth]);
   const filteredReservations = useMemo(() => filterReservationsByCategory(selectedMonthReservations, tab), [selectedMonthReservations, tab]);
   const reservationStats = useMemo(() => getReservationStats(selectedMonthReservations), [selectedMonthReservations]);
@@ -878,7 +798,7 @@ export default function App() {
     { label: "해당 월 전체 예약", value: reservationStats.total, icon: categoryIcon[CATEGORY.ALL], helper: `${calendarMonth.getFullYear()}년 ${calendarMonth.getMonth() + 1}월 기준` },
     { label: "사용 가능 시설", value: facilityStatusStats[FACILITY_STATUS.AVAILABLE] || 0, icon: "🟢", helper: "현재 예약 가능 상태" },
     { label: "사용 중 시설", value: facilityStatusStats[FACILITY_STATUS.IN_USE] || 0, icon: "🔵", helper: "현재 사용 중" },
-    { label: "점검 예정 시설", value: facilityStatusStats[FACILITY_STATUS.MAINTENANCE_SOON] || 0, icon: "🟡", helper: "점검 확인 필요" },
+    { label: "해당 월 점검 등록", value: reservationStats.maintenance, icon: "🛠", helper: "관리자가 등록한 점검 일정" },
   ];
 
   return (
@@ -887,18 +807,17 @@ export default function App() {
         <header className="header">
           <div>
             <p><strong>Phenotyping Facility Reservation System</strong></p>
-            <h1>표현체 연구시설 사용일정 공유 웹</h1>
+            <h1>표현체 연구시설 예약시스템</h1>
             <p>재배시설은 장기 재배 예약으로, 촬영시설은 시간 단위 예약으로 분리 관리합니다. 예약 데이터는 Supabase 공용 DB에 저장됩니다.</p>
             {loading && <p>예약 데이터를 불러오는 중입니다...</p>}
           </div>
-          <div className="mode-tabs header-actions">
+          <div className="mode-tabs">
             <button type="button" onClick={() => setViewMode(VIEW_MODE.USER)} className={viewMode === VIEW_MODE.USER ? "active" : ""}>사용자</button>
             <button type="button" onClick={() => setViewMode(VIEW_MODE.ADMIN)} className={viewMode === VIEW_MODE.ADMIN ? "active" : ""}>관리자</button>
-            <button type="button" onClick={loadDemoData}>예시 불러오기</button>
           </div>
         </header>
 
-        <section className="dashboard" aria-label="대시보드 요약">
+        <section className="dashboard">
           {dashboardCards.map((card) => (
             <div key={card.label} className="card stat">
               <div>
@@ -912,32 +831,32 @@ export default function App() {
         </section>
 
         {viewMode === VIEW_MODE.USER && (
-          <>
-            <section>
+          <div className="user-layout">
+            <section className="user-growth-section">
               <SectionTitle icon={categoryIcon[CATEGORY.GROWTH]} title="재배시설" subtitle="기간 단위로 예약하고, 필요 시 촬영 예약과 연결합니다." />
               <div className="grid-5" style={{ marginTop: 14 }}>
                 {growthFacilities.map((item) => <FacilityCard key={item.id} item={item} />)}
               </div>
             </section>
 
-            <section>
+            <section className="user-imaging-section">
               <SectionTitle icon={categoryIcon[CATEGORY.IMAGING]} title="촬영시설 및 장비" subtitle="시간 단위 예약, 연계 촬영과 독립 촬영을 구분합니다." />
               <div className="grid-5" style={{ marginTop: 14 }}>
                 {imagingFacilities.map((item) => <FacilityCard key={item.id} item={item} />)}
               </div>
             </section>
 
-            <section className="two-col">
+            <section className="two-col user-reservation-section">
               <ReservationForm reservations={reservationsState} onAddReservation={addReservation} disabled={!isSupabaseConfigured} />
               <div className="card rules">
                 <h3>예약 운영 규칙</h3>
                 <p><strong>재배 예약</strong>은 작목, 재배기간, 처리조건, 식물체 수를 기준으로 승인합니다.</p>
                 <p><strong>촬영 예약</strong>은 촬영시설, 센서, 촬영시간, 연계 재배 예약 여부를 기준으로 승인합니다.</p>
-                <p>동일 시설·장비의 시간이 겹치면 저장되지 않으며, 기존 예약 정보가 경고로 표시됩니다.</p>
+                <p>동일 시설·장비의 시간이 겹치면 저장되지 않습니다.</p>
                 <p>점검, 보정, 수리 일정도 중복 방지 대상에 포함됩니다.</p>
               </div>
             </section>
-          </>
+          </div>
         )}
 
         {viewMode === VIEW_MODE.ADMIN && (
