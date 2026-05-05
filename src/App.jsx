@@ -690,7 +690,7 @@ function AdminLogin({ session, onLogin, onLogout, isAdmin }) {
   );
 }
 
-function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteReservation }) {
+function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteReservation, calendarMonth }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState(null);
@@ -1107,6 +1107,7 @@ export default function App() {
                 reservations={reservationsState}
                 onUpdateReservation={updateReservation}
                 onDeleteReservation={deleteReservation}
+                calendarMonth={calendarMonth}
               />
               <AdminDownloadCard reservations={reservationsState} calendarMonth={calendarMonth} />
               </>
