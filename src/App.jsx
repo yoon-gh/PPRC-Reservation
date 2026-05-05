@@ -694,6 +694,7 @@ function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteRese
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState(null);
+  const [downloadMonth, setDownloadMonth] = useState(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
   const [filters, setFilters] = useState({ status: "all", facility: "all", crop: "all", user: "all", periodOrder: "desc" });
 
   function startEdit(reservation) {
@@ -735,6 +736,15 @@ function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteRese
     await onUpdateReservation(id, { status });
   }
 
+  const monthLabel = `${downloadMonth.getFullYear()}_${String(downloadMonth.getMonth() + 1).padStart(2, "0")}`;
+  const downloadMonthReservations = useMemo(() => filterReservationsByMonth(reservations, downloadMonth), [reservations, downloadMonth]);
+  const downloadYears = useMemo(() => {
+    const years = reservations
+      .map((reservation) => toDate(reservation.start)?.getFullYear())
+      .filter((year) => Number.isInteger(year));
+    const uniqueYears = Array.from(new Set([...years, calendarMonth.getFullYear()])).sort((a, b) => b - a);
+    return uniqueYears.length ? uniqueYears : [calendarMonth.getFullYear()];
+  }, [reservations, calendarMonth]);
   const options = useMemo(() => ({
     status: Array.from(new Set(reservations.map((r) => r.status).filter(Boolean))),
     facility: Array.from(new Set(reservations.map((r) => r.facility).filter(Boolean))),
@@ -758,6 +768,34 @@ function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteRese
         <div>
           <h3>관리자 예약 승인·수정</h3>
           <p>전체 예약을 수정할 수 있습니다.</p>
+        </div>
+      </div>
+      <div className="table-filters">
+        <select value={filters.status} onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}><option value="all">상태 전체</option>{options.status.map((v) => <option key={v} value={v}>{getStatusLabel(v)}</option>)}</select>
+        <select value={filters.facility} onChange={(e) => setFilters((p) => ({ ...p, facility: e.target.value }))}><option value="all">시설/장비 전체</option>{options.facility.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+        <select value={filters.crop} onChange={(e) => setFilters((p) => ({ ...p, crop: e.target.value }))}><option value="all">작목 전체</option>{options.crop.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+        <select value={filters.user} onChange={(e) => setFilters((p) => ({ ...p, user: e.target.value }))}><option value="all">신청자 전체</option>{options.user.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+        <select value={filters.periodOrder} onChange={(e) => setFilters((p) => ({ ...p, periodOrder: e.target.value }))}><option value="desc">기간 내림차순</option><option value="asc">기간 오름차순</option></select>
+      </div>
+      <div className="download-section">
+        <h4>예약 내역 다운로드</h4>
+        <div className="actions">
+          <select
+            value={downloadMonth.getFullYear()}
+            onChange={(event) => setDownloadMonth(new Date(Number(event.target.value), downloadMonth.getMonth(), 1))}
+            aria-label="다운로드 연도 선택"
+          >
+            {downloadYears.map((year) => <option key={year} value={year}>{year}년</option>)}
+          </select>
+          <select
+            value={downloadMonth.getMonth() + 1}
+            onChange={(event) => setDownloadMonth(new Date(downloadMonth.getFullYear(), Number(event.target.value) - 1, 1))}
+            aria-label="다운로드 월 선택"
+          >
+            {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => <option key={month} value={month}>{month}월</option>)}
+          </select>
+          <Button type="button" variant="light" onClick={() => downloadReservationsCsv(reservations, "pprc_reservations_all.csv")}>누적 전체 CSV 다운로드</Button>
+          <Button type="button" variant="light" onClick={() => downloadReservationsCsv(downloadMonthReservations, `pprc_reservations_${monthLabel}.csv`)}>선택 월 CSV 다운로드</Button>
         </div>
       </div>
       <div className="table-filters">
