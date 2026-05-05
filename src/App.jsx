@@ -554,6 +554,24 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
 }
 
 function ReservationTable({ reservations }) {
+  const [filters, setFilters] = useState({ status: "all", facility: "all", crop: "all", user: "all", periodOrder: "desc" });
+  const options = useMemo(() => ({
+    status: Array.from(new Set(reservations.map((r) => r.status).filter(Boolean))),
+    facility: Array.from(new Set(reservations.map((r) => r.facility).filter(Boolean))),
+    crop: Array.from(new Set(reservations.map((r) => r.crop).filter(Boolean))),
+    user: Array.from(new Set(reservations.map((r) => r.user).filter(Boolean))),
+  }), [reservations]);
+  const visibleReservations = useMemo(() => {
+    const filtered = reservations.filter((r) => {
+      if (filters.status !== "all" && r.status !== filters.status) return false;
+      if (filters.facility !== "all" && r.facility !== filters.facility) return false;
+      if (filters.crop !== "all" && r.crop !== filters.crop) return false;
+      if (filters.user !== "all" && r.user !== filters.user) return false;
+      return true;
+    });
+    return filtered.sort((a, b) => filters.periodOrder === "asc" ? toDate(a.start) - toDate(b.start) : toDate(b.start) - toDate(a.start));
+  }, [reservations, filters]);
+
   return (
     <div className="card table-card">
       <div className="table-head">
@@ -562,11 +580,18 @@ function ReservationTable({ reservations }) {
           <p>재배는 기간 단위, 촬영은 시간 단위로 표시합니다.</p>
         </div>
       </div>
+      <div className="table-filters">
+        <select value={filters.status} onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}><option value="all">상태 전체</option>{options.status.map((v) => <option key={v} value={v}>{getStatusLabel(v)}</option>)}</select>
+        <select value={filters.facility} onChange={(e) => setFilters((p) => ({ ...p, facility: e.target.value }))}><option value="all">시설/장비 전체</option>{options.facility.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+        <select value={filters.crop} onChange={(e) => setFilters((p) => ({ ...p, crop: e.target.value }))}><option value="all">작목 전체</option>{options.crop.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+        <select value={filters.user} onChange={(e) => setFilters((p) => ({ ...p, user: e.target.value }))}><option value="all">신청자 전체</option>{options.user.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+        <select value={filters.periodOrder} onChange={(e) => setFilters((p) => ({ ...p, periodOrder: e.target.value }))}><option value="desc">기간 내림차순</option><option value="asc">기간 오름차순</option></select>
+      </div>
 
       <div className="mobile-reservation-list">
-        {reservations.length === 0 ? (
+        {visibleReservations.length === 0 ? (
           <div className="empty-mobile-card">표시할 예약이 없습니다.</div>
-        ) : reservations.map((reservation) => (
+        ) : visibleReservations.map((reservation) => (
           <div className="mobile-reservation-card" key={`mobile-${reservation.id}`}>
             <div className="mobile-card-top">
               <strong>{reservation.title}</strong>
@@ -588,7 +613,7 @@ function ReservationTable({ reservations }) {
             </tr>
           </thead>
           <tbody>
-            {reservations.map((reservation) => (
+            {visibleReservations.map((reservation) => (
               <tr key={reservation.id}>
                 <td>{getCategoryLabel(reservation.category)}</td>
                 <td>{reservation.facility}</td>
@@ -670,6 +695,7 @@ function AdminReservationPanel({ reservations, calendarMonth, onUpdateReservatio
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState(null);
   const [downloadMonth, setDownloadMonth] = useState(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
+  const [filters, setFilters] = useState({ status: "all", facility: "all", crop: "all", user: "all", periodOrder: "desc" });
 
   function startEdit(reservation) {
     setEditingId(reservation.id);
@@ -719,14 +745,40 @@ function AdminReservationPanel({ reservations, calendarMonth, onUpdateReservatio
     const uniqueYears = Array.from(new Set([...years, calendarMonth.getFullYear()])).sort((a, b) => b - a);
     return uniqueYears.length ? uniqueYears : [calendarMonth.getFullYear()];
   }, [reservations, calendarMonth]);
+  const options = useMemo(() => ({
+    status: Array.from(new Set(reservations.map((r) => r.status).filter(Boolean))),
+    facility: Array.from(new Set(reservations.map((r) => r.facility).filter(Boolean))),
+    crop: Array.from(new Set(reservations.map((r) => r.crop).filter(Boolean))),
+    user: Array.from(new Set(reservations.map((r) => r.user).filter(Boolean))),
+  }), [reservations]);
+  const visibleReservations = useMemo(() => {
+    const filtered = reservations.filter((r) => {
+      if (filters.status !== "all" && r.status !== filters.status) return false;
+      if (filters.facility !== "all" && r.facility !== filters.facility) return false;
+      if (filters.crop !== "all" && r.crop !== filters.crop) return false;
+      if (filters.user !== "all" && r.user !== filters.user) return false;
+      return true;
+    });
+    return filtered.sort((a, b) => filters.periodOrder === "asc" ? toDate(a.start) - toDate(b.start) : toDate(b.start) - toDate(a.start));
+  }, [reservations, filters]);
 
   return (
     <div className="card table-card">
       <div className="table-head">
         <div>
           <h3>관리자 예약 승인·수정</h3>
-          <p>전체 예약을 수정할 수 있으며, 전체 누적 데이터 또는 직접 선택한 월의 데이터만 CSV로 내려받을 수 있습니다.</p>
+          <p>전체 예약을 수정할 수 있습니다.</p>
         </div>
+      </div>
+      <div className="table-filters">
+        <select value={filters.status} onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}><option value="all">상태 전체</option>{options.status.map((v) => <option key={v} value={v}>{getStatusLabel(v)}</option>)}</select>
+        <select value={filters.facility} onChange={(e) => setFilters((p) => ({ ...p, facility: e.target.value }))}><option value="all">시설/장비 전체</option>{options.facility.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+        <select value={filters.crop} onChange={(e) => setFilters((p) => ({ ...p, crop: e.target.value }))}><option value="all">작목 전체</option>{options.crop.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+        <select value={filters.user} onChange={(e) => setFilters((p) => ({ ...p, user: e.target.value }))}><option value="all">신청자 전체</option>{options.user.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+        <select value={filters.periodOrder} onChange={(e) => setFilters((p) => ({ ...p, periodOrder: e.target.value }))}><option value="desc">기간 내림차순</option><option value="asc">기간 오름차순</option></select>
+      </div>
+      <div className="download-section">
+        <h4>예약 내역 다운로드</h4>
         <div className="actions">
           <select
             value={downloadMonth.getFullYear()}
@@ -755,7 +807,7 @@ function AdminReservationPanel({ reservations, calendarMonth, onUpdateReservatio
             </tr>
           </thead>
           <tbody>
-            {reservations.map((reservation) => {
+            {visibleReservations.map((reservation) => {
               const isEditing = editingId === reservation.id;
               const row = isEditing ? draft : reservation;
               const facilities = getFacilitiesByCategory(row.category);
@@ -1008,7 +1060,7 @@ export default function App() {
         <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
         <p>국립원예특작과학원 채소기초기반과</p>
         <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
-        <p>Ver. 1.0 (2026.05)</p>
+        <p>Ver. 1.1 (2026.05)</p>
       </footer>
     </div>
   );
