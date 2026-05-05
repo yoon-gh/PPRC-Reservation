@@ -946,9 +946,14 @@ export default function App() {
     if (!isSupabaseConfigured || !supabase) return { error: "Supabase가 설정되지 않았습니다." };
     const { data, error } = await supabase.from("reservations").insert(mapReservationToDb(reservation)).select().single();
     if (error) return { error: error.message };
+    
     const savedReservation = mapDbToReservation(data);
     try {
-      await supabase.functions.invoke("send-reservation-email", {body: {reservation: savedReservation,},});
+      await supabase.functions.invoke("send-reservation-email", {
+        body: {
+          reservation: savedReservation,
+        },
+      });
     } catch (emailError) {
       console.error("Email notification failed:", emailError);
     }
