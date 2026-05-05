@@ -935,6 +935,9 @@ export default function App() {
               <p><strong>재배 예약</strong>과 <strong>촬영 예약</strong>은 별도로 신청해주세요.</p>
               <p>동일 시설·장비의 예약/점검 일정이 겹치면 저장되지 않습니다.</p>
               <p>예약 내용 변경은 관리자에게 문의하세요.</p>
+              <p><strong>촬영 방식 설명</strong></p>
+              <p>재배시설 연계 촬영: 컨베이어 온실 또는 XYZ에서 재배중인 작물의 촬영</p>
+              <p>독립 촬영: 이외 나머지 경우</p>
             </div>
           </section>
         )}
