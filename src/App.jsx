@@ -487,7 +487,7 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
             <label className="full">촬영 방식
               <select value={form.imagingMode} onChange={(event) => updateForm("imagingMode", event.target.value)}>
                 <option>독립 촬영</option>
-                <option>재배시설 연계 촬영</option>
+                <option>연계 촬영</option>
               </select>
             </label>
           )}
@@ -1081,7 +1081,7 @@ export default function App() {
               <p>- 예약 <strong>변경 및 취소</strong>는 관리자에게 사전 연락 후 처리해야 합니다.</p>
 
               <p><strong>※ 촬영 방식 설명</strong></p>
-              <p>- 재배시설 연계 촬영: 컨베이어/XYZ 재배시설에서 재배 중인 작물의 촬영</p>
+              <p>- 연계 촬영: 컨베이어/XYZ 재배시설에서 재배 중인 작물의 촬영</p>
               <p>- 독립 촬영: 이외의 나머지 경우(default)</p>
                 
               <p><strong>※ 관리자 문의:</strong> 윤효인 연구사, 형성철 연구원</p>
