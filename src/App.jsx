@@ -619,12 +619,12 @@ function ReservationTable({ reservations }) {
           <thead>
             <tr>
               <th>구분</th>
-              <th><HeaderDropdown label="시설/장비" value={filters.facility} onChange={(next) => setFilters((p) => ({ ...p, facility: next }))} options={[{ value: "all", label: "전체" }, ...options.facility.map((v) => ({ value: v, label: v }))]} /></th>
+              <th><div className="th-control"><span>시설/장비 ▼</span><select value={filters.facility} onChange={(e) => setFilters((p) => ({ ...p, facility: e.target.value }))}><option value="all">전체</option>{options.facility.map((v) => <option key={v} value={v}>{v}</option>)}</select></div></th>
               <th>예약명</th>
-              <th><HeaderDropdown label="작목" value={filters.crop} onChange={(next) => setFilters((p) => ({ ...p, crop: next }))} options={[{ value: "all", label: "전체" }, ...options.crop.map((v) => ({ value: v, label: v }))]} /></th>
-              <th><HeaderDropdown label="기간/일자" value={filters.periodOrder} onChange={(next) => setFilters((p) => ({ ...p, periodOrder: next }))} options={[{ value: "desc", label: "최신순" }, { value: "asc", label: "오래된순" }]} /></th>
+              <th><div className="th-control"><span>작목 ▼</span><select value={filters.crop} onChange={(e) => setFilters((p) => ({ ...p, crop: e.target.value }))}><option value="all">전체</option>{options.crop.map((v) => <option key={v} value={v}>{v}</option>)}</select></div></th>
+              <th><div className="th-control"><span>기간/일자</span><select value={filters.periodOrder} onChange={(e) => setFilters((p) => ({ ...p, periodOrder: e.target.value }))}><option value="desc">최신순</option><option value="asc">오래된순</option></select></div></th>
               <th>시간</th><th>연계</th>
-              <th><HeaderDropdown label="상태" value={filters.status} onChange={(next) => setFilters((p) => ({ ...p, status: next }))} options={[{ value: "all", label: "전체" }, ...options.status.map((v) => ({ value: v, label: getStatusLabel(v) }))]} /></th>
+              <th><div className="th-control"><span>상태 ▼</span><select value={filters.status} onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}><option value="all">전체</option>{options.status.map((v) => <option key={v} value={v}>{getStatusLabel(v)}</option>)}</select></div></th>
             </tr>
           </thead>
           <tbody>
@@ -790,13 +790,13 @@ function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteRese
         <table className="admin-table">
           <thead>
             <tr>
-              <th><HeaderDropdown label="상태" value={filters.status} onChange={(next) => setFilters((p) => ({ ...p, status: next }))} options={[{ value: "all", label: "전체" }, ...options.status.map((v) => ({ value: v, label: getStatusLabel(v) }))]} /></th>
+              <th><div className="th-control"><span>상태 ▼</span><select value={filters.status} onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}><option value="all">전체</option>{options.status.map((v) => <option key={v} value={v}>{getStatusLabel(v)}</option>)}</select></div></th>
               <th>구분</th>
-              <th><HeaderDropdown label="시설/장비" value={filters.facility} onChange={(next) => setFilters((p) => ({ ...p, facility: next }))} options={[{ value: "all", label: "전체" }, ...options.facility.map((v) => ({ value: v, label: v }))]} /></th>
+              <th><div className="th-control"><span>시설/장비 ▼</span><select value={filters.facility} onChange={(e) => setFilters((p) => ({ ...p, facility: e.target.value }))}><option value="all">전체</option>{options.facility.map((v) => <option key={v} value={v}>{v}</option>)}</select></div></th>
               <th>예약명</th>
-              <th><HeaderDropdown label="작목" value={filters.crop} onChange={(next) => setFilters((p) => ({ ...p, crop: next }))} options={[{ value: "all", label: "전체" }, ...options.crop.map((v) => ({ value: v, label: v }))]} /></th>
-              <th><HeaderDropdown label="신청자" value={filters.user} onChange={(next) => setFilters((p) => ({ ...p, user: next }))} options={[{ value: "all", label: "전체" }, ...options.user.map((v) => ({ value: v, label: v }))]} /></th>
-              <th><HeaderDropdown label="시작" value={filters.periodOrder} onChange={(next) => setFilters((p) => ({ ...p, periodOrder: next }))} options={[{ value: "desc", label: "최신순" }, { value: "asc", label: "오래된순" }]} /></th>
+              <th><div className="th-control"><span>작목 ▼</span><select value={filters.crop} onChange={(e) => setFilters((p) => ({ ...p, crop: e.target.value }))}><option value="all">전체</option>{options.crop.map((v) => <option key={v} value={v}>{v}</option>)}</select></div></th>
+              <th><div className="th-control"><span>신청자 ▼</span><select value={filters.user} onChange={(e) => setFilters((p) => ({ ...p, user: e.target.value }))}><option value="all">전체</option>{options.user.map((v) => <option key={v} value={v}>{v}</option>)}</select></div></th>
+              <th><div className="th-control"><span>시작</span><select value={filters.periodOrder} onChange={(e) => setFilters((p) => ({ ...p, periodOrder: e.target.value }))}><option value="desc">최신순</option><option value="asc">오래된순</option></select></div></th>
               <th>종료</th><th>관리</th>
             </tr>
           </thead>

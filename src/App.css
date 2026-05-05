@@ -3,7 +3,9 @@
 .download-section{padding:16px 20px;border-bottom:1px solid #f1f5f9}
 .download-actions{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;overflow-x:auto}
 .download-actions .btn,.download-actions select{flex:0 0 auto}
-.th-dropdown{position:relative;display:inline-block}.th-dropdown summary{list-style:none;cursor:pointer;color:#334155;font-weight:800;background:#fff;border:1px solid #cbd5e1;border-radius:10px;padding:6px 10px;white-space:nowrap}.th-dropdown summary::-webkit-details-marker{display:none}.th-dropdown-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:20;background:#fff;border:1px solid #e2e8f0;border-radius:12px;min-width:180px;box-shadow:0 6px 18px rgba(15,23,42,.12);padding:6px;display:grid;gap:4px}.th-dropdown-menu button{border:0;background:transparent;text-align:left;padding:8px 10px;border-radius:8px;cursor:pointer;color:#334155;white-space:nowrap}.th-dropdown-menu button:hover,.th-dropdown-menu button.active{background:#f1f5f9;color:#0f172a;font-weight:700}
+th .th-control{display:flex;align-items:center;gap:6px}
+th .th-control span{color:#64748b;font-size:12px;font-weight:800}
+th .th-control select{min-width:90px;padding:6px 8px;border-radius:10px;background:#fff}
 @media(max-width:640px){
   .download-actions{flex-wrap:wrap}
 }
