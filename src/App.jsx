@@ -585,18 +585,16 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
 }
 
 function ReservationTable({ reservations }) {
-  const [filters, setFilters] = useState({ status: "all", facility: "all", crop: "all", user: "all", periodOrder: "desc" });
+  const [filters, setFilters] = useState({ status: "all", facility: "all", user: "all", periodOrder: "desc" });
   const options = useMemo(() => ({
     status: Array.from(new Set(reservations.map((r) => r.status).filter(Boolean))),
     facility: Array.from(new Set(reservations.map((r) => r.facility).filter(Boolean))),
-    crop: Array.from(new Set(reservations.map((r) => r.crop).filter(Boolean))),
     user: Array.from(new Set(reservations.map((r) => r.user).filter(Boolean))),
   }), [reservations]);
   const visibleReservations = useMemo(() => {
     const filtered = reservations.filter((r) => {
       if (filters.status !== "all" && r.status !== filters.status) return false;
       if (filters.facility !== "all" && r.facility !== filters.facility) return false;
-      if (filters.crop !== "all" && r.crop !== filters.crop) return false;
       if (filters.user !== "all" && r.user !== filters.user) return false;
       return true;
     });
@@ -636,7 +634,7 @@ function ReservationTable({ reservations }) {
               <th>구분</th>
               <th><HeaderDropdown label="시설/장비" value={filters.facility} onChange={(next) => setFilters((p) => ({ ...p, facility: next }))} options={[{ value: "all", label: "전체" }, ...options.facility.map((v) => ({ value: v, label: v }))]} /></th>
               <th>예약명</th>
-              <th><HeaderDropdown label="작목" value={filters.crop} onChange={(next) => setFilters((p) => ({ ...p, crop: next }))} options={[{ value: "all", label: "전체" }, ...options.crop.map((v) => ({ value: v, label: v }))]} /></th>
+              <th>작목</th>
               <th><HeaderDropdown label="기간/일자" value={filters.periodOrder} onChange={(next) => setFilters((p) => ({ ...p, periodOrder: next }))} options={[{ value: "desc", label: "최신순" }, { value: "asc", label: "오래된순" }]} /></th>
               <th>시간</th><th>연계</th>
               <th><HeaderDropdown label="상태" value={filters.status} onChange={(next) => setFilters((p) => ({ ...p, status: next }))} options={[{ value: "all", label: "전체" }, ...options.status.map((v) => ({ value: v, label: getStatusLabel(v) }))]} /></th>
@@ -725,7 +723,7 @@ function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteRese
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState(null);
   const [downloadMonth, setDownloadMonth] = useState(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
-  const [filters, setFilters] = useState({ status: "all", facility: "all", crop: "all", user: "all", periodOrder: "desc" });
+  const [filters, setFilters] = useState({ status: "all", facility: "all", user: "all", periodOrder: "desc" });
 
   function startEdit(reservation) {
     setEditingId(reservation.id);
@@ -778,14 +776,12 @@ function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteRese
   const options = useMemo(() => ({
     status: Array.from(new Set(reservations.map((r) => r.status).filter(Boolean))),
     facility: Array.from(new Set(reservations.map((r) => r.facility).filter(Boolean))),
-    crop: Array.from(new Set(reservations.map((r) => r.crop).filter(Boolean))),
     user: Array.from(new Set(reservations.map((r) => r.user).filter(Boolean))),
   }), [reservations]);
   const visibleReservations = useMemo(() => {
     const filtered = reservations.filter((r) => {
       if (filters.status !== "all" && r.status !== filters.status) return false;
       if (filters.facility !== "all" && r.facility !== filters.facility) return false;
-      if (filters.crop !== "all" && r.crop !== filters.crop) return false;
       if (filters.user !== "all" && r.user !== filters.user) return false;
       return true;
     });
@@ -809,7 +805,7 @@ function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteRese
               <th>구분</th>
               <th><HeaderDropdown label="시설/장비" value={filters.facility} onChange={(next) => setFilters((p) => ({ ...p, facility: next }))} options={[{ value: "all", label: "전체" }, ...options.facility.map((v) => ({ value: v, label: v }))]} /></th>
               <th>예약명</th>
-              <th><HeaderDropdown label="작목" value={filters.crop} onChange={(next) => setFilters((p) => ({ ...p, crop: next }))} options={[{ value: "all", label: "전체" }, ...options.crop.map((v) => ({ value: v, label: v }))]} /></th>
+              <th>작목</th>
               <th><HeaderDropdown label="신청자" value={filters.user} onChange={(next) => setFilters((p) => ({ ...p, user: next }))} options={[{ value: "all", label: "전체" }, ...options.user.map((v) => ({ value: v, label: v }))]} /></th>
               <th><HeaderDropdown label="시작" value={filters.periodOrder} onChange={(next) => setFilters((p) => ({ ...p, periodOrder: next }))} options={[{ value: "desc", label: "최신순" }, { value: "asc", label: "오래된순" }]} /></th>
               <th>종료</th><th>관리</th>
