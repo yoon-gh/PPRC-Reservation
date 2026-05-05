@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 
 const FACILITY_STATUS = Object.freeze({ AVAILABLE: "available", IN_USE: "in_use" });
@@ -55,10 +55,10 @@ const growthFacilities = [
 
 const imagingFacilities = [
   { id: "I-01", name: "컨베이어 엽록소형광", sensors: ["엽록소형광"], status: FACILITY_STATUS.AVAILABLE },
-  { id: "I-02", name: "컨베이어 다중영상촬영실", sensors: ["다분광", "열화상", "LiDAR"], status: FACILITY_STATUS.AVAILABLE },
-  { id: "I-03", name: "XYZ 다중영상촬영실", sensors: ["다분광", "초분광", "열화상"], status: FACILITY_STATUS.IN_USE },
-  { id: "I-04", name: "소형 초분광 촬영실", sensors: ["초분광"], status: FACILITY_STATUS.AVAILABLE },
-  { id: "I-05", name: "소형 다분광 촬영실", sensors: ["다분광"], status: FACILITY_STATUS.AVAILABLE },
+  { id: "I-02", name: "컨베이어 다중영상촬영", sensors: ["다분광", "열화상", "LiDAR"], status: FACILITY_STATUS.AVAILABLE },
+  { id: "I-03", name: "XYZ 다중영상촬영", sensors: ["다분광", "초분광", "열화상"], status: FACILITY_STATUS.IN_USE },
+  { id: "I-04", name: "소형 초분광 촬영", sensors: ["초분광"], status: FACILITY_STATUS.AVAILABLE },
+  { id: "I-05", name: "소형 다분광 촬영", sensors: ["다분광"], status: FACILITY_STATUS.AVAILABLE },
 ];
 
 const allFacilities = [...growthFacilities, ...imagingFacilities];
@@ -72,6 +72,7 @@ const defaultForm = {
   start: "2026-05-13T09:00",
   end: "2026-05-13T18:00",
   imagingMode: "독립 촬영",
+  growthImagingPlan: "미촬영",
 };
 
 const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || "")
@@ -106,6 +107,14 @@ function formatPeriod(reservation) {
   const end = toDate(reservation.end);
   if (!start || !end) return "-";
   return dateKey(start) === dateKey(end) ? dateKey(start) : `${dateKey(start)} ~ ${dateKey(end)}`;
+}
+
+function formatShortPeriod(reservation) {
+  const start = toDate(reservation.start);
+  const end = toDate(reservation.end);
+  if (!start || !end) return "-";
+  const short = (date) => `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return `${short(start)}~${short(end)}`;
 }
 
 function formatTime(reservation) {
@@ -297,6 +306,37 @@ function Button({ children, variant = "dark", ...props }) {
   return <button className={`btn ${variant}`} {...props}>{children}</button>;
 }
 
+function HeaderDropdown({ label, value, options, onChange }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const selected = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    function handleOutside(event) {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  return (
+    <div className="th-dropdown" ref={rootRef}>
+      <button type="button" className="th-dropdown-trigger" onClick={() => setOpen((prev) => !prev)}>
+        {label} {selected ? `: ${selected.label}` : ""} ▼
+      </button>
+      {open && (
+      <div className="th-dropdown-menu">
+        {options.map((option) => (
+          <button key={option.value} type="button" className={option.value === value ? "active" : ""} onClick={() => { onChange(option.value); setOpen(false); }}>
+            {option.label}
+          </button>
+        ))}
+      </div>
+      )}
+    </div>
+  );
+}
+
 function SectionTitle({ icon, title, subtitle }) {
   return (
     <div className="section-title">
@@ -310,15 +350,17 @@ function SectionTitle({ icon, title, subtitle }) {
 }
 
 function FacilityCard({ item }) {
-  const showSensorMemo = item.name.includes("다중영상촬영실") && Array.isArray(item.sensors);
+  const showSensorMemo = item.name.includes("다중영상촬영") && Array.isArray(item.sensors);
   return (
     <div className={`card facility ${item.status}`}>
-      <div>
+      <div className="facility-top">
         <small>{item.id}</small>
+        <StatusBadge status={item.status} />
+      </div>
+      <div>
         <h3>{item.name}</h3>
         {showSensorMemo && <div className="sensor-note"> {item.sensors.join(", ")}</div>}
       </div>
-      <StatusBadge status={item.status} />
     </div>
   );
 }
@@ -328,6 +370,7 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
   const [message, setMessage] = useState(null);
   const selectableFacilities = getFacilitiesByCategory(form.category);
   const isImaging = form.category === CATEGORY.IMAGING;
+  const isGrowth = form.category === CATEGORY.GROWTH;
   const isMaintenance = form.category === CATEGORY.MAINTENANCE;
   const canSelectMaintenance = isAdmin;
 
@@ -362,7 +405,13 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
       start: form.start,
       end: form.end,
       status: isMaintenance ? RESERVATION_STATUS.MAINTENANCE : RESERVATION_STATUS.PENDING,
-      linked: isMaintenance ? "예약 불가" : isImaging ? form.imagingMode : "미연계",
+      linked: isMaintenance
+        ? "예약 불가"
+        : isImaging
+          ? form.imagingMode
+          : isGrowth
+            ? (form.growthImagingPlan === "촬영 예정" ? form.imagingMode : "미촬영")
+            : "미연계",
     };
 
     if (isMaintenance && !isAdmin) {
@@ -413,7 +462,7 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
             <input value={form.title} onChange={(event) => updateForm("title", event.target.value)} placeholder="예: 배추 팁번 실험" />
           </label>
           <label>신청자/소속
-            <input value={form.user} onChange={(event) => updateForm("user", event.target.value)} placeholder="예: 채소기초기반과 홍길동" />
+            <input value={form.user} onChange={(event) => updateForm("user", event.target.value)} placeholder="예: 채소과 홍길동" />
           </label>
           {!isMaintenance && (
             <label className="full">작목
@@ -426,7 +475,15 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
           <label>종료 일시
             <input value={form.end} onChange={(event) => updateForm("end", event.target.value)} type="datetime-local" />
           </label>
-          {isImaging && (
+          {isGrowth && (
+            <label className="full">촬영 여부
+              <select value={form.growthImagingPlan} onChange={(event) => updateForm("growthImagingPlan", event.target.value)}>
+                <option>미촬영</option>
+                <option>촬영 예정</option>
+              </select>
+            </label>
+          )}
+          {(isImaging || (isGrowth && form.growthImagingPlan === "촬영 예정")) && (
             <label className="full">촬영 방식
               <select value={form.imagingMode} onChange={(event) => updateForm("imagingMode", event.target.value)}>
                 <option>독립 촬영</option>
@@ -444,6 +501,11 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
   const { days, label } = useMemo(() => getCalendarDays(month.getFullYear(), month.getMonth()), [month]);
   const visibleReservations = useMemo(() => filterReservationsByCategory(reservations, selectedCategory), [reservations, selectedCategory]);
   const mobileAgenda = useMemo(() => groupReservationsByDay(visibleReservations, month), [visibleReservations, month]);
+  const todayKey = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dateKey(today);
+  }, []);
 
   function moveMonth(offset) {
     onMonthChange(new Date(month.getFullYear(), month.getMonth() + offset, 1));
@@ -467,15 +529,28 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
         <div className="calendar-grid">
           {["일", "월", "화", "수", "목", "금", "토"].map((day) => <div key={day} className="day-name">{day}</div>)}
           {days.map(({ date, key, inMonth }) => {
-            const dayReservations = getReservationsForDay(visibleReservations, date);
+            const dayStart = new Date(date);
+            dayStart.setHours(0, 0, 0, 0);
+            const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+            const dayReservations = getReservationsForDay(visibleReservations, date).filter((reservation) => {
+              const start = toDate(reservation.start);
+              if (!start) return false;
+              start.setHours(0, 0, 0, 0);
+              if (start.getTime() === dayStart.getTime()) return true;
+              return start < monthStart && dayStart.getTime() === monthStart.getTime();
+            });
             const visible = dayReservations.slice(0, 3);
             const extra = dayReservations.length - visible.length;
             return (
-              <div key={key} className={`day ${inMonth ? "" : "muted"}`}>
-                <strong>{date.getDate()}</strong>
+              <div key={key} className={`day ${inMonth ? "" : "muted"} ${key === todayKey ? "today" : ""}`}>
+                <strong className={key === todayKey ? "today-label" : ""}>{date.getDate()}</strong>
                 {visible.map((reservation) => (
-                  <div key={`${reservation.id}-${key}`} className={`event ${STATUS_CLASS[reservation.status]}`} title={`${reservation.facility} / ${reservation.title}`}>
-                    {categoryIcon[reservation.category]} {reservation.facility} · {reservation.title}
+                  <div
+                    key={`${reservation.id}-${key}`}
+                    className={`event ${STATUS_CLASS[reservation.status]}`}
+                    title={`${reservation.title} (${formatShortPeriod(reservation)})`}
+                  >
+                    {reservation.facility}
                   </div>
                 ))}
                 {extra > 0 && <div className="sensor-note">+{extra}건 더 있음</div>}
@@ -510,6 +585,22 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
 }
 
 function ReservationTable({ reservations }) {
+  const [filters, setFilters] = useState({ status: "all", facility: "all", user: "all", periodOrder: "desc" });
+  const options = useMemo(() => ({
+    status: Array.from(new Set(reservations.map((r) => r.status).filter(Boolean))),
+    facility: Array.from(new Set(reservations.map((r) => r.facility).filter(Boolean))),
+    user: Array.from(new Set(reservations.map((r) => r.user).filter(Boolean))),
+  }), [reservations]);
+  const visibleReservations = useMemo(() => {
+    const filtered = reservations.filter((r) => {
+      if (filters.status !== "all" && r.status !== filters.status) return false;
+      if (filters.facility !== "all" && r.facility !== filters.facility) return false;
+      if (filters.user !== "all" && r.user !== filters.user) return false;
+      return true;
+    });
+    return filtered.sort((a, b) => filters.periodOrder === "asc" ? toDate(a.start) - toDate(b.start) : toDate(b.start) - toDate(a.start));
+  }, [reservations, filters]);
+
   return (
     <div className="card table-card">
       <div className="table-head">
@@ -520,9 +611,9 @@ function ReservationTable({ reservations }) {
       </div>
 
       <div className="mobile-reservation-list">
-        {reservations.length === 0 ? (
+        {visibleReservations.length === 0 ? (
           <div className="empty-mobile-card">표시할 예약이 없습니다.</div>
-        ) : reservations.map((reservation) => (
+        ) : visibleReservations.map((reservation) => (
           <div className="mobile-reservation-card" key={`mobile-${reservation.id}`}>
             <div className="mobile-card-top">
               <strong>{reservation.title}</strong>
@@ -540,11 +631,17 @@ function ReservationTable({ reservations }) {
         <table>
           <thead>
             <tr>
-              <th>구분</th><th>시설/장비</th><th>예약명</th><th>작목</th><th>기간/일자</th><th>시간</th><th>연계</th><th>상태</th>
+              <th>구분</th>
+              <th><HeaderDropdown label="시설/장비" value={filters.facility} onChange={(next) => setFilters((p) => ({ ...p, facility: next }))} options={[{ value: "all", label: "전체" }, ...options.facility.map((v) => ({ value: v, label: v }))]} /></th>
+              <th>예약명</th>
+              <th>작목</th>
+              <th><HeaderDropdown label="기간/일자" value={filters.periodOrder} onChange={(next) => setFilters((p) => ({ ...p, periodOrder: next }))} options={[{ value: "desc", label: "최신순" }, { value: "asc", label: "오래된순" }]} /></th>
+              <th>시간</th><th>연계</th>
+              <th><HeaderDropdown label="상태" value={filters.status} onChange={(next) => setFilters((p) => ({ ...p, status: next }))} options={[{ value: "all", label: "전체" }, ...options.status.map((v) => ({ value: v, label: getStatusLabel(v) }))]} /></th>
             </tr>
           </thead>
           <tbody>
-            {reservations.map((reservation) => (
+            {visibleReservations.map((reservation) => (
               <tr key={reservation.id}>
                 <td>{getCategoryLabel(reservation.category)}</td>
                 <td>{reservation.facility}</td>
@@ -621,10 +718,12 @@ function AdminLogin({ session, onLogin, onLogout, isAdmin }) {
   );
 }
 
-function AdminReservationPanel({ reservations, selectedMonthReservations, onUpdateReservation, onDeleteReservation }) {
+function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteReservation, calendarMonth }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState(null);
+  const [downloadMonth, setDownloadMonth] = useState(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
+  const [filters, setFilters] = useState({ status: "all", facility: "all", user: "all", periodOrder: "desc" });
 
   function startEdit(reservation) {
     setEditingId(reservation.id);
@@ -665,25 +764,55 @@ function AdminReservationPanel({ reservations, selectedMonthReservations, onUpda
     await onUpdateReservation(id, { status });
   }
 
+  const monthLabel = `${downloadMonth.getFullYear()}_${String(downloadMonth.getMonth() + 1).padStart(2, "0")}`;
+  const downloadMonthReservations = useMemo(() => filterReservationsByMonth(reservations, downloadMonth), [reservations, downloadMonth]);
+  const downloadYears = useMemo(() => {
+    const years = reservations
+      .map((reservation) => toDate(reservation.start)?.getFullYear())
+      .filter((year) => Number.isInteger(year));
+    const uniqueYears = Array.from(new Set([...years, calendarMonth.getFullYear()])).sort((a, b) => b - a);
+    return uniqueYears.length ? uniqueYears : [calendarMonth.getFullYear()];
+  }, [reservations, calendarMonth]);
+  const options = useMemo(() => ({
+    status: Array.from(new Set(reservations.map((r) => r.status).filter(Boolean))),
+    facility: Array.from(new Set(reservations.map((r) => r.facility).filter(Boolean))),
+    user: Array.from(new Set(reservations.map((r) => r.user).filter(Boolean))),
+  }), [reservations]);
+  const visibleReservations = useMemo(() => {
+    const filtered = reservations.filter((r) => {
+      if (filters.status !== "all" && r.status !== filters.status) return false;
+      if (filters.facility !== "all" && r.facility !== filters.facility) return false;
+      if (filters.user !== "all" && r.user !== filters.user) return false;
+      return true;
+    });
+    return filtered.sort((a, b) => filters.periodOrder === "asc" ? toDate(a.start) - toDate(b.start) : toDate(b.start) - toDate(a.start));
+  }, [reservations, filters]);
+
   return (
     <div className="card table-card">
       <div className="table-head">
         <div>
           <h3>관리자 예약 승인·수정</h3>
-          <p>전체 예약을 수정할 수 있으며, 다운로드는 현재 캘린더 월에 해당하는 예약만 내려받습니다.</p>
+          <p>전체 예약을 수정할 수 있습니다.</p>
         </div>
-        <Button type="button" variant="light" onClick={() => downloadReservationsCsv(selectedMonthReservations, "pprc_reservations_current_month.csv")}>엑셀용 CSV 다운로드</Button>
-      </div>
+      </div>     
       {message && <div className={`message ${message.type}`} style={{ margin: 16 }}>{message.text}</div>}
       <div className="table-wrap admin-table-wrap">
         <table className="admin-table">
           <thead>
             <tr>
-              <th>상태</th><th>구분</th><th>시설/장비</th><th>예약명</th><th>작목</th><th>신청자</th><th>시작</th><th>종료</th><th>관리</th>
+              <th><HeaderDropdown label="상태" value={filters.status} onChange={(next) => setFilters((p) => ({ ...p, status: next }))} options={[{ value: "all", label: "전체" }, ...options.status.map((v) => ({ value: v, label: getStatusLabel(v) }))]} /></th>
+              <th>구분</th>
+              <th><HeaderDropdown label="시설/장비" value={filters.facility} onChange={(next) => setFilters((p) => ({ ...p, facility: next }))} options={[{ value: "all", label: "전체" }, ...options.facility.map((v) => ({ value: v, label: v }))]} /></th>
+              <th>예약명</th>
+              <th>작목</th>
+              <th><HeaderDropdown label="신청자" value={filters.user} onChange={(next) => setFilters((p) => ({ ...p, user: next }))} options={[{ value: "all", label: "전체" }, ...options.user.map((v) => ({ value: v, label: v }))]} /></th>
+              <th><HeaderDropdown label="시작" value={filters.periodOrder} onChange={(next) => setFilters((p) => ({ ...p, periodOrder: next }))} options={[{ value: "desc", label: "최신순" }, { value: "asc", label: "오래된순" }]} /></th>
+              <th>종료</th><th>관리</th>
             </tr>
           </thead>
           <tbody>
-            {reservations.map((reservation) => {
+            {visibleReservations.map((reservation) => {
               const isEditing = editingId === reservation.id;
               const row = isEditing ? draft : reservation;
               const facilities = getFacilitiesByCategory(row.category);
@@ -737,6 +866,42 @@ function AdminReservationPanel({ reservations, selectedMonthReservations, onUpda
   );
 }
 
+
+function AdminDownloadCard({ reservations, calendarMonth }) {
+  const [downloadMonth, setDownloadMonth] = useState(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
+  const monthLabel = `${downloadMonth.getFullYear()}_${String(downloadMonth.getMonth() + 1).padStart(2, "0")}`;
+  const downloadMonthReservations = useMemo(() => filterReservationsByMonth(reservations, downloadMonth), [reservations, downloadMonth]);
+  const downloadYears = useMemo(() => {
+    const years = reservations.map((reservation) => toDate(reservation.start)?.getFullYear()).filter((year) => Number.isInteger(year));
+    const uniqueYears = Array.from(new Set([...years, calendarMonth.getFullYear()])).sort((a, b) => b - a);
+    return uniqueYears.length ? uniqueYears : [calendarMonth.getFullYear()];
+  }, [reservations, calendarMonth]);
+
+  return (
+    <div className="card table-card">
+      <div className="table-head">
+        <div>
+          <h3>예약 내역 다운로드</h3>
+          <p>전체 누적 데이터 또는 선택한 월 데이터만 CSV로 내려받을 수 있습니다.</p>
+        </div>
+      </div>
+      <div className="download-section">
+        <div className="actions download-actions">
+          <Button type="button" variant="light" onClick={() => downloadReservationsCsv(reservations, "pprc_reservations_all.csv")}>누적 전체 CSV 다운로드</Button>
+          <Button type="button" variant="light" onClick={() => downloadReservationsCsv(downloadMonthReservations, `pprc_reservations_${monthLabel}.csv`)}>선택 월 CSV 다운로드</Button>
+          <select value={downloadMonth.getFullYear()} onChange={(event) => setDownloadMonth(new Date(Number(event.target.value), downloadMonth.getMonth(), 1))} aria-label="다운로드 연도 선택">
+            {downloadYears.map((year) => <option key={year} value={year}>{year}년</option>)}
+          </select>
+          <select value={downloadMonth.getMonth() + 1} onChange={(event) => setDownloadMonth(new Date(downloadMonth.getFullYear(), Number(event.target.value) - 1, 1))} aria-label="다운로드 월 선택">
+            {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => <option key={month} value={month}>{month}월</option>)}
+          </select>
+          
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [tab, setTab] = useState(CATEGORY.ALL);
   const [page, setPage] = useState(PAGE.OVERVIEW);
@@ -757,6 +922,24 @@ export default function App() {
       setLoading(false);
     }
     init();
+  }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return undefined;
+
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) setSession(data.session || null);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession || null);
+    });
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   async function addReservation(reservation) {
@@ -824,7 +1007,6 @@ export default function App() {
     { label: "해당 월 전체 예약", value: reservationStats.total, icon: categoryIcon[CATEGORY.ALL], helper: `${calendarMonth.getFullYear()}년 ${calendarMonth.getMonth() + 1}월 기준` },
     { label: "사용 가능 시설", value: facilityStatusStats[FACILITY_STATUS.AVAILABLE] || 0, icon: "🟢", helper: "현재 예약 가능 상태" },
     { label: "사용 중 시설", value: facilityStatusStats[FACILITY_STATUS.IN_USE] || 0, icon: "🔵", helper: "현재 사용 중" },
-    { label: "해당 월 점검 등록", value: reservationStats.maintenance, icon: "🛠", helper: "관리자가 등록한 점검 일정" },
   ];
 
   return (
@@ -834,7 +1016,7 @@ export default function App() {
           <div>
             <p><strong>Phenotyping Facility Reservation System</strong></p>
             <h1>표현체 연구시설 예약 시스템</h1>
-            <p>재배시설은 장기 재배 예약으로, 촬영시설은 시간 단위 예약으로 분리 관리합니다. 예약 데이터는 Supabase 공용 DB에 저장됩니다.</p>
+            <p>재배시설은 장기 재배 예약으로, 촬영시설은 시간 단위 예약으로 분리 관리합니다. 예약 데이터는 Supabase 프로젝트 DB에 저장됩니다.</p>
             {loading && <p>예약 데이터를 불러오는 중입니다...</p>}
           </div>
           <div className="mode-tabs">
@@ -883,10 +1065,13 @@ export default function App() {
             <ReservationForm reservations={reservationsState} onAddReservation={addReservation} disabled={!isSupabaseConfigured} isAdmin={isAdmin} initialCategory={reserveInitialCategory} />
             <div className="card rules">
               <h3>예약 운영 규칙</h3>
-              <p><strong>재배 예약</strong>은 작목, 재배기간, 처리조건, 식물체 수를 기준으로 승인합니다.</p>
-              <p><strong>촬영 예약</strong>은 촬영시설, 센서, 촬영시간, 연계 재배 예약 여부를 기준으로 승인합니다.</p>
-              <p>동일 시설·장비의 시간이 겹치면 저장되지 않습니다.</p>
-              <p>점검, 보정, 수리 일정도 중복 방지 대상에 포함됩니다.</p>
+              <p><strong>- 재배 예약</strong>과 <strong>촬영 예약</strong>은 별도로 신청해주세요.</p>
+              <p>- 동일 시설·장비의 예약/점검 일정이 겹치면 저장되지 않습니다.</p>
+              <p>- 실험 일정의 변경/취소 시 관리자에게 꼭! 연락주세요.</p>
+              <p>- 관리자: 윤효인 연구사, 형성철 연구원</p>
+              <p>※ 촬영 방식 설명</p>
+              <p>- <strong>재배시설 연계 촬영</strong>: 컨베이어 온실 또는 XYZ에서 재배중인 작물의 촬영</p>
+              <p>- <strong>독립 촬영</strong>: 이외 나머지 경우(default)</p>
             </div>
           </section>
         )}
@@ -898,15 +1083,6 @@ export default function App() {
             {isAdmin && (
               <>
                 <section className="dashboard">
-                  <div className="card stat">
-                    <div>
-                      <div className="label">점검 빠른 등록</div>
-                      <div className="helper">해당 월 점검 일정을 바로 등록합니다.</div>
-                    </div>
-                    <div className="actions">
-                      <Button type="button" onClick={() => { setReserveInitialCategory(CATEGORY.MAINTENANCE); setPage(PAGE.RESERVE); }}>🛠 점검 등록</Button>
-                    </div>
-                  </div>
                   {dashboardCards.map((card) => (
                     <div key={card.label} className="card stat">
                       <div>
@@ -917,19 +1093,36 @@ export default function App() {
                       <div className="icon">{card.icon}</div>
                     </div>
                   ))}
+                  <div className="card stat">
+                    <div>
+                      <div className="label">점검 빠른 등록</div>
+                      <div className="helper">해당 월 점검 일정을 바로 등록합니다.</div>
+                    </div>
+                    <div className="actions">
+                      <Button type="button" onClick={() => { setReserveInitialCategory(CATEGORY.MAINTENANCE); setPage(PAGE.RESERVE); }}>🛠 점검 등록</Button>
+                    </div>
+                  </div>
                 </section>
                 <AdminReservationPanel
                 reservations={reservationsState}
-                selectedMonthReservations={selectedMonthReservations}
                 onUpdateReservation={updateReservation}
                 onDeleteReservation={deleteReservation}
+                calendarMonth={calendarMonth}
               />
+              <AdminDownloadCard reservations={reservationsState} calendarMonth={calendarMonth} />
               </>
             )}
           </>
         )}
 
       </div>
+
+      <footer className="footer-note">
+        <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
+        <p>국립원예특작과학원 채소기초기반과</p>
+        <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
+        <p>Ver. 1.1 (2026.05)</p>
+      </footer>
     </div>
   );
 }
