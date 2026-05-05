@@ -665,10 +665,11 @@ function AdminLogin({ session, onLogin, onLogout, isAdmin }) {
   );
 }
 
-function AdminReservationPanel({ reservations, selectedMonthReservations, onUpdateReservation, onDeleteReservation }) {
+function AdminReservationPanel({ reservations, calendarMonth, onUpdateReservation, onDeleteReservation }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState(null);
+  const [downloadMonth, setDownloadMonth] = useState(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
 
   function startEdit(reservation) {
     setEditingId(reservation.id);
@@ -709,14 +710,41 @@ function AdminReservationPanel({ reservations, selectedMonthReservations, onUpda
     await onUpdateReservation(id, { status });
   }
 
+  const monthLabel = `${downloadMonth.getFullYear()}_${String(downloadMonth.getMonth() + 1).padStart(2, "0")}`;
+  const downloadMonthReservations = useMemo(() => filterReservationsByMonth(reservations, downloadMonth), [reservations, downloadMonth]);
+  const downloadYears = useMemo(() => {
+    const years = reservations
+      .map((reservation) => toDate(reservation.start)?.getFullYear())
+      .filter((year) => Number.isInteger(year));
+    const uniqueYears = Array.from(new Set([...years, calendarMonth.getFullYear()])).sort((a, b) => b - a);
+    return uniqueYears.length ? uniqueYears : [calendarMonth.getFullYear()];
+  }, [reservations, calendarMonth]);
+
   return (
     <div className="card table-card">
       <div className="table-head">
         <div>
           <h3>관리자 예약 승인·수정</h3>
-          <p>전체 예약을 수정할 수 있으며, 다운로드는 현재 캘린더 월에 해당하는 예약만 내려받습니다.</p>
+          <p>전체 예약을 수정할 수 있으며, 전체 누적 데이터 또는 직접 선택한 월의 데이터만 CSV로 내려받을 수 있습니다.</p>
         </div>
-        <Button type="button" variant="light" onClick={() => downloadReservationsCsv(selectedMonthReservations, "pprc_reservations_current_month.csv")}>엑셀용 CSV 다운로드</Button>
+        <div className="actions">
+          <select
+            value={downloadMonth.getFullYear()}
+            onChange={(event) => setDownloadMonth(new Date(Number(event.target.value), downloadMonth.getMonth(), 1))}
+            aria-label="다운로드 연도 선택"
+          >
+            {downloadYears.map((year) => <option key={year} value={year}>{year}년</option>)}
+          </select>
+          <select
+            value={downloadMonth.getMonth() + 1}
+            onChange={(event) => setDownloadMonth(new Date(downloadMonth.getFullYear(), Number(event.target.value) - 1, 1))}
+            aria-label="다운로드 월 선택"
+          >
+            {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => <option key={month} value={month}>{month}월</option>)}
+          </select>
+          <Button type="button" variant="light" onClick={() => downloadReservationsCsv(reservations, "pprc_reservations_all.csv")}>누적 전체 CSV 다운로드</Button>
+          <Button type="button" variant="light" onClick={() => downloadReservationsCsv(downloadMonthReservations, `pprc_reservations_${monthLabel}.csv`)}>선택 월 CSV 다운로드</Button>
+        </div>
       </div>
       {message && <div className={`message ${message.type}`} style={{ margin: 16 }}>{message.text}</div>}
       <div className="table-wrap admin-table-wrap">
@@ -962,7 +990,7 @@ export default function App() {
                 </section>
                 <AdminReservationPanel
                 reservations={reservationsState}
-                selectedMonthReservations={selectedMonthReservations}
+                calendarMonth={calendarMonth}
                 onUpdateReservation={updateReservation}
                 onDeleteReservation={deleteReservation}
               />
