@@ -669,6 +669,7 @@ function AdminReservationPanel({ reservations, selectedMonthReservations, calend
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState(null);
+  const [downloadMonth, setDownloadMonth] = useState(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
 
   function startEdit(reservation) {
     setEditingId(reservation.id);
