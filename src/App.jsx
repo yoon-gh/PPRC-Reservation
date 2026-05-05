@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 
 const FACILITY_STATUS = Object.freeze({ AVAILABLE: "available", IN_USE: "in_use" });
@@ -306,6 +306,37 @@ function Button({ children, variant = "dark", ...props }) {
   return <button className={`btn ${variant}`} {...props}>{children}</button>;
 }
 
+function HeaderDropdown({ label, value, options, onChange }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const selected = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    function handleOutside(event) {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  return (
+    <div className="th-dropdown" ref={rootRef}>
+      <button type="button" className="th-dropdown-trigger" onClick={() => setOpen((prev) => !prev)}>
+        {label} {selected ? `: ${selected.label}` : ""} ▼
+      </button>
+      {open && (
+      <div className="th-dropdown-menu">
+        {options.map((option) => (
+          <button key={option.value} type="button" className={option.value === value ? "active" : ""} onClick={() => { onChange(option.value); setOpen(false); }}>
+            {option.label}
+          </button>
+        ))}
+      </div>
+      )}
+    </div>
+  );
+}
+
 function SectionTitle({ icon, title, subtitle }) {
   return (
     <div className="section-title">
@@ -554,18 +585,16 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
 }
 
 function ReservationTable({ reservations }) {
-  const [filters, setFilters] = useState({ status: "all", facility: "all", crop: "all", user: "all", periodOrder: "desc" });
+  const [filters, setFilters] = useState({ status: "all", facility: "all", user: "all", periodOrder: "desc" });
   const options = useMemo(() => ({
     status: Array.from(new Set(reservations.map((r) => r.status).filter(Boolean))),
     facility: Array.from(new Set(reservations.map((r) => r.facility).filter(Boolean))),
-    crop: Array.from(new Set(reservations.map((r) => r.crop).filter(Boolean))),
     user: Array.from(new Set(reservations.map((r) => r.user).filter(Boolean))),
   }), [reservations]);
   const visibleReservations = useMemo(() => {
     const filtered = reservations.filter((r) => {
       if (filters.status !== "all" && r.status !== filters.status) return false;
       if (filters.facility !== "all" && r.facility !== filters.facility) return false;
-      if (filters.crop !== "all" && r.crop !== filters.crop) return false;
       if (filters.user !== "all" && r.user !== filters.user) return false;
       return true;
     });
@@ -579,13 +608,6 @@ function ReservationTable({ reservations }) {
           <h3>예약 리스트</h3>
           <p>재배는 기간 단위, 촬영은 시간 단위로 표시합니다.</p>
         </div>
-      </div>
-      <div className="table-filters">
-        <select value={filters.status} onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}><option value="all">상태 전체</option>{options.status.map((v) => <option key={v} value={v}>{getStatusLabel(v)}</option>)}</select>
-        <select value={filters.facility} onChange={(e) => setFilters((p) => ({ ...p, facility: e.target.value }))}><option value="all">시설/장비 전체</option>{options.facility.map((v) => <option key={v} value={v}>{v}</option>)}</select>
-        <select value={filters.crop} onChange={(e) => setFilters((p) => ({ ...p, crop: e.target.value }))}><option value="all">작목 전체</option>{options.crop.map((v) => <option key={v} value={v}>{v}</option>)}</select>
-        <select value={filters.user} onChange={(e) => setFilters((p) => ({ ...p, user: e.target.value }))}><option value="all">신청자 전체</option>{options.user.map((v) => <option key={v} value={v}>{v}</option>)}</select>
-        <select value={filters.periodOrder} onChange={(e) => setFilters((p) => ({ ...p, periodOrder: e.target.value }))}><option value="desc">기간 내림차순</option><option value="asc">기간 오름차순</option></select>
       </div>
 
       <div className="mobile-reservation-list">
@@ -609,7 +631,13 @@ function ReservationTable({ reservations }) {
         <table>
           <thead>
             <tr>
-              <th>구분</th><th>시설/장비</th><th>예약명</th><th>작목</th><th>기간/일자</th><th>시간</th><th>연계</th><th>상태</th>
+              <th>구분</th>
+              <th><HeaderDropdown label="시설/장비" value={filters.facility} onChange={(next) => setFilters((p) => ({ ...p, facility: next }))} options={[{ value: "all", label: "전체" }, ...options.facility.map((v) => ({ value: v, label: v }))]} /></th>
+              <th>예약명</th>
+              <th>작목</th>
+              <th><HeaderDropdown label="기간/일자" value={filters.periodOrder} onChange={(next) => setFilters((p) => ({ ...p, periodOrder: next }))} options={[{ value: "desc", label: "최신순" }, { value: "asc", label: "오래된순" }]} /></th>
+              <th>시간</th><th>연계</th>
+              <th><HeaderDropdown label="상태" value={filters.status} onChange={(next) => setFilters((p) => ({ ...p, status: next }))} options={[{ value: "all", label: "전체" }, ...options.status.map((v) => ({ value: v, label: getStatusLabel(v) }))]} /></th>
             </tr>
           </thead>
           <tbody>
@@ -695,7 +723,7 @@ function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteRese
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState(null);
   const [downloadMonth, setDownloadMonth] = useState(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
-  const [filters, setFilters] = useState({ status: "all", facility: "all", crop: "all", user: "all", periodOrder: "desc" });
+  const [filters, setFilters] = useState({ status: "all", facility: "all", user: "all", periodOrder: "desc" });
 
   function startEdit(reservation) {
     setEditingId(reservation.id);
@@ -748,14 +776,12 @@ function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteRese
   const options = useMemo(() => ({
     status: Array.from(new Set(reservations.map((r) => r.status).filter(Boolean))),
     facility: Array.from(new Set(reservations.map((r) => r.facility).filter(Boolean))),
-    crop: Array.from(new Set(reservations.map((r) => r.crop).filter(Boolean))),
     user: Array.from(new Set(reservations.map((r) => r.user).filter(Boolean))),
   }), [reservations]);
   const visibleReservations = useMemo(() => {
     const filtered = reservations.filter((r) => {
       if (filters.status !== "all" && r.status !== filters.status) return false;
       if (filters.facility !== "all" && r.facility !== filters.facility) return false;
-      if (filters.crop !== "all" && r.crop !== filters.crop) return false;
       if (filters.user !== "all" && r.user !== filters.user) return false;
       return true;
     });
@@ -770,19 +796,19 @@ function AdminReservationPanel({ reservations, onUpdateReservation, onDeleteRese
           <p>전체 예약을 수정할 수 있습니다.</p>
         </div>
       </div>     
-      <div className="table-filters">
-        <select value={filters.status} onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}><option value="all">상태 전체</option>{options.status.map((v) => <option key={v} value={v}>{getStatusLabel(v)}</option>)}</select>
-        <select value={filters.facility} onChange={(e) => setFilters((p) => ({ ...p, facility: e.target.value }))}><option value="all">시설/장비 전체</option>{options.facility.map((v) => <option key={v} value={v}>{v}</option>)}</select>
-        <select value={filters.crop} onChange={(e) => setFilters((p) => ({ ...p, crop: e.target.value }))}><option value="all">작목 전체</option>{options.crop.map((v) => <option key={v} value={v}>{v}</option>)}</select>
-        <select value={filters.user} onChange={(e) => setFilters((p) => ({ ...p, user: e.target.value }))}><option value="all">신청자 전체</option>{options.user.map((v) => <option key={v} value={v}>{v}</option>)}</select>
-        <select value={filters.periodOrder} onChange={(e) => setFilters((p) => ({ ...p, periodOrder: e.target.value }))}><option value="desc">기간 내림차순</option><option value="asc">기간 오름차순</option></select>
-      </div>
       {message && <div className={`message ${message.type}`} style={{ margin: 16 }}>{message.text}</div>}
       <div className="table-wrap admin-table-wrap">
         <table className="admin-table">
           <thead>
             <tr>
-              <th>상태</th><th>구분</th><th>시설/장비</th><th>예약명</th><th>작목</th><th>신청자</th><th>시작</th><th>종료</th><th>관리</th>
+              <th><HeaderDropdown label="상태" value={filters.status} onChange={(next) => setFilters((p) => ({ ...p, status: next }))} options={[{ value: "all", label: "전체" }, ...options.status.map((v) => ({ value: v, label: getStatusLabel(v) }))]} /></th>
+              <th>구분</th>
+              <th><HeaderDropdown label="시설/장비" value={filters.facility} onChange={(next) => setFilters((p) => ({ ...p, facility: next }))} options={[{ value: "all", label: "전체" }, ...options.facility.map((v) => ({ value: v, label: v }))]} /></th>
+              <th>예약명</th>
+              <th>작목</th>
+              <th><HeaderDropdown label="신청자" value={filters.user} onChange={(next) => setFilters((p) => ({ ...p, user: next }))} options={[{ value: "all", label: "전체" }, ...options.user.map((v) => ({ value: v, label: v }))]} /></th>
+              <th><HeaderDropdown label="시작" value={filters.periodOrder} onChange={(next) => setFilters((p) => ({ ...p, periodOrder: next }))} options={[{ value: "desc", label: "최신순" }, { value: "asc", label: "오래된순" }]} /></th>
+              <th>종료</th><th>관리</th>
             </tr>
           </thead>
           <tbody>
@@ -860,7 +886,7 @@ function AdminDownloadCard({ reservations, calendarMonth }) {
         </div>
       </div>
       <div className="download-section">
-        <div className="actions">
+        <div className="actions download-actions">
           <Button type="button" variant="light" onClick={() => downloadReservationsCsv(reservations, "pprc_reservations_all.csv")}>누적 전체 CSV 다운로드</Button>
           <Button type="button" variant="light" onClick={() => downloadReservationsCsv(downloadMonthReservations, `pprc_reservations_${monthLabel}.csv`)}>선택 월 CSV 다운로드</Button>
           <select value={downloadMonth.getFullYear()} onChange={(event) => setDownloadMonth(new Date(Number(event.target.value), downloadMonth.getMonth(), 1))} aria-label="다운로드 연도 선택">
