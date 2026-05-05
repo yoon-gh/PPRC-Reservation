@@ -306,6 +306,22 @@ function Button({ children, variant = "dark", ...props }) {
   return <button className={`btn ${variant}`} {...props}>{children}</button>;
 }
 
+function HeaderDropdown({ label, value, options, onChange }) {
+  const selected = options.find((option) => option.value === value);
+  return (
+    <details className="th-dropdown">
+      <summary>{label} {selected ? `: ${selected.label}` : ""} ▼</summary>
+      <div className="th-dropdown-menu">
+        {options.map((option) => (
+          <button key={option.value} type="button" className={option.value === value ? "active" : ""} onClick={() => onChange(option.value)}>
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function SectionTitle({ icon, title, subtitle }) {
   return (
     <div className="section-title">
