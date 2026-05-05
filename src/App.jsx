@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 
 const FACILITY_STATUS = Object.freeze({ AVAILABLE: "available", IN_USE: "in_use" });
@@ -307,18 +307,33 @@ function Button({ children, variant = "dark", ...props }) {
 }
 
 function HeaderDropdown({ label, value, options, onChange }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
   const selected = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    function handleOutside(event) {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
   return (
-    <details className="th-dropdown">
-      <summary>{label} {selected ? `: ${selected.label}` : ""} ▼</summary>
+    <div className="th-dropdown" ref={rootRef}>
+      <button type="button" className="th-dropdown-trigger" onClick={() => setOpen((prev) => !prev)}>
+        {label} {selected ? `: ${selected.label}` : ""} ▼
+      </button>
+      {open && (
       <div className="th-dropdown-menu">
         {options.map((option) => (
-          <button key={option.value} type="button" className={option.value === value ? "active" : ""} onClick={() => onChange(option.value)}>
+          <button key={option.value} type="button" className={option.value === value ? "active" : ""} onClick={() => { onChange(option.value); setOpen(false); }}>
             {option.label}
           </button>
         ))}
       </div>
-    </details>
+      )}
+    </div>
   );
 }
 
