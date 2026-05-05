@@ -950,13 +950,13 @@ export default function App() {
     const savedReservation = mapDbToReservation(data);
     try {
       await supabase.functions.invoke("send-reservation-email", {
-        body: {
-          reservation: savedReservation,
-        },
+        body: { reservation: savedReservation },
       });
     } catch (emailError) {
       console.error("Email notification failed:", emailError);
     }
+
+    
     setReservationsState((prev) => [...prev, savedReservation]);
     return { ok: true };
   }
