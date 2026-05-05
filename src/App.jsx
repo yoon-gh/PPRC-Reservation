@@ -925,6 +925,24 @@ export default function App() {
     init();
   }, []);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return undefined;
+
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) setSession(data.session || null);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession || null);
+    });
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
   async function addReservation(reservation) {
     if (!isSupabaseConfigured || !supabase) return { error: "Supabase가 설정되지 않았습니다." };
     const { data, error } = await supabase.from("reservations").insert(mapReservationToDb(reservation)).select().single();
