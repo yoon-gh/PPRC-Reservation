@@ -665,7 +665,7 @@ function AdminLogin({ session, onLogin, onLogout, isAdmin }) {
   );
 }
 
-function AdminReservationPanel({ reservations, calendarMonth, onUpdateReservation, onDeleteReservation }) {
+function AdminReservationPanel({ reservations, selectedMonthReservations, calendarMonth, onUpdateReservation, onDeleteReservation }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState(null);
@@ -710,28 +710,18 @@ function AdminReservationPanel({ reservations, calendarMonth, onUpdateReservatio
     await onUpdateReservation(id, { status });
   }
 
-  const monthLabel = `${downloadMonth.getFullYear()}_${String(downloadMonth.getMonth() + 1).padStart(2, "0")}`;
-  const downloadMonthReservations = useMemo(() => filterReservationsByMonth(reservations, downloadMonth), [reservations, downloadMonth]);
+  const monthLabel = `${calendarMonth.getFullYear()}_${String(calendarMonth.getMonth() + 1).padStart(2, "0")}`;
 
   return (
     <div className="card table-card">
       <div className="table-head">
         <div>
           <h3>관리자 예약 승인·수정</h3>
-          <p>전체 예약을 수정할 수 있으며, 전체 누적 데이터 또는 직접 선택한 월의 데이터만 CSV로 내려받을 수 있습니다.</p>
+          <p>전체 예약을 수정할 수 있으며, 전체 누적 데이터 또는 선택한 월의 데이터만 CSV로 내려받을 수 있습니다.</p>
         </div>
         <div className="actions">
-          <input
-            type="month"
-            value={`${downloadMonth.getFullYear()}-${String(downloadMonth.getMonth() + 1).padStart(2, "0")}`}
-            onChange={(event) => {
-              const [year, month] = event.target.value.split("-").map(Number);
-              if (!year || !month) return;
-              setDownloadMonth(new Date(year, month - 1, 1));
-            }}
-          />
           <Button type="button" variant="light" onClick={() => downloadReservationsCsv(reservations, "pprc_reservations_all.csv")}>누적 전체 CSV 다운로드</Button>
-          <Button type="button" variant="light" onClick={() => downloadReservationsCsv(downloadMonthReservations, `pprc_reservations_${monthLabel}.csv`)}>선택 월 CSV 다운로드</Button>
+          <Button type="button" variant="light" onClick={() => downloadReservationsCsv(selectedMonthReservations, `pprc_reservations_${monthLabel}.csv`)}>선택 월 CSV 다운로드</Button>
         </div>
       </div>
       {message && <div className={`message ${message.type}`} style={{ margin: 16 }}>{message.text}</div>}
@@ -978,6 +968,7 @@ export default function App() {
                 </section>
                 <AdminReservationPanel
                 reservations={reservationsState}
+                selectedMonthReservations={selectedMonthReservations}
                 calendarMonth={calendarMonth}
                 onUpdateReservation={updateReservation}
                 onDeleteReservation={deleteReservation}
