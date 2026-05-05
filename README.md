@@ -70,11 +70,6 @@
 * Backend: Supabase (DB + Auth)
 * Deployment: Vercel
 
----
-
-## 📝 버전 정보
-
-Ver. 1.0 (2026.05)
 
 ---
 
