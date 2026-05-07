@@ -533,6 +533,8 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
             dayStart.setHours(0, 0, 0, 0);
             const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
             const dayReservations = getReservationsForDay(visibleReservations, date).filter((reservation) => {
+              if (reservation.category === CATEGORY.IMAGING) return true;
+
               const start = toDate(reservation.start);
               if (!start) return false;
               start.setHours(0, 0, 0, 0);
