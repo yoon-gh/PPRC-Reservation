@@ -495,14 +495,6 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
               {selectableFacilities.map((facility) => <option key={facility.id} value={facility.name}>{facility.name}</option>)}
             </select>
           </label>
-          {isImaging && (
-            <label>예약 입력 방식
-              <select value={form.bookingMode} onChange={(event) => updateForm("bookingMode", event.target.value)}>
-                <option value="single">단일 기간/시간</option>
-                <option value="recurring">기간 내 매일 같은 시간</option>
-              </select>
-            </label>
-          )}
           <label>예약명
             <input value={form.title} onChange={(event) => updateForm("title", event.target.value)} placeholder="예: 배추 팁번 실험" />
           </label>
@@ -512,6 +504,14 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
           {!isMaintenance && (
             <label className="full">작목
               <input value={form.crop} onChange={(event) => updateForm("crop", event.target.value)} placeholder="예: 배추, 딸기, 고추" />
+            </label>
+          )}
+          {isImaging && (
+            <label className="full">예약 입력 방식
+              <select value={form.bookingMode} onChange={(event) => updateForm("bookingMode", event.target.value)}>
+                <option value="single">단일 기간/시간</option>
+                <option value="recurring">기간 내 매일 같은 시간</option>
+              </select>
             </label>
           )}
           {isRecurring && isImaging ? (
