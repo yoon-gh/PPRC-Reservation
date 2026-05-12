@@ -495,6 +495,14 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
               {selectableFacilities.map((facility) => <option key={facility.id} value={facility.name}>{facility.name}</option>)}
             </select>
           </label>
+          {isImaging && (
+            <label>예약 입력 방식
+              <select value={form.bookingMode} onChange={(event) => updateForm("bookingMode", event.target.value)}>
+                <option value="single">단일 기간/시간</option>
+                <option value="recurring">기간 내 매일 같은 시간</option>
+              </select>
+            </label>
+          )}
           <label>예약명
             <input value={form.title} onChange={(event) => updateForm("title", event.target.value)} placeholder="예: 배추 팁번 실험" />
           </label>
@@ -619,7 +627,17 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
                     {reservation.facility}
                   </div>
                 ))}
-                {extra > 0 && <div className="sensor-note">+{extra}건 더 있음</div>}
+                {extra > 0 && (
+                  <div
+                    className="sensor-note"
+                    title={dayReservations
+                      .slice(3)
+                      .map((reservation) => `${reservation.facility} · ${reservation.title} (${formatShortPeriod(reservation)})`)
+                      .join("\n")}
+                  >
+                    +{extra}건 더 있음
+                  </div>
+                )}
               </div>
             );
           })}
@@ -693,7 +711,7 @@ function ReservationTable({ reservations }) {
         ))}
       </div>
 
-      <div className="table-wrap">
+      <div className="table-wrap reservation-table-wrap">
         <table>
           <thead>
             <tr>
@@ -1133,8 +1151,8 @@ export default function App() {
                 ))}
               </div>
             </section>
-            <ReservationTable reservations={filteredReservations} />
             <MonthlyCalendar reservations={reservationsState} selectedCategory={tab} month={calendarMonth} onMonthChange={setCalendarMonth} />
+            <ReservationTable reservations={filteredReservations} />
           </div>
         )}
 
@@ -1201,7 +1219,7 @@ export default function App() {
         <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
         <p>국립원예특작과학원 채소기초기반과</p>
         <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
-        <p>Ver. 1.1 (2026.05)</p>
+        <p>Ver. 1.2 (2026.05)</p>
       </footer>
     </div>
   );
