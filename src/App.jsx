@@ -66,11 +66,16 @@ const allFacilities = [...growthFacilities, ...imagingFacilities];
 const defaultForm = {
   category: CATEGORY.IMAGING,
   facility: imagingFacilities[0].name,
+  bookingMode: "single",
   title: "",
   user: "",
   crop: "",
   start: "2026-05-13T09:00",
   end: "2026-05-13T18:00",
+  recurringStartDate: "2026-05-13",
+  recurringEndDate: "2026-05-13",
+  recurringStartTime: "09:00",
+  recurringEndTime: "10:00",
   imagingMode: "독립 촬영",
   growthImagingPlan: "미촬영",
 };
@@ -372,6 +377,7 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
   const isImaging = form.category === CATEGORY.IMAGING;
   const isGrowth = form.category === CATEGORY.GROWTH;
   const isMaintenance = form.category === CATEGORY.MAINTENANCE;
+  const isRecurring = form.bookingMode === "recurring";
   const canSelectMaintenance = isAdmin;
 
   useEffect(() => {
@@ -395,15 +401,12 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
   async function submitReservation(event) {
     event.preventDefault();
 
-    const candidate = {
-      id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`,
+    const baseReservation = {
       category: form.category,
       facility: form.facility,
       title: form.title.trim() || (isMaintenance ? "장비 점검" : "신규 예약"),
       crop: isMaintenance ? "-" : form.crop.trim() || "미입력",
       user: form.user.trim() || "미입력",
-      start: form.start,
-      end: form.end,
       status: isMaintenance ? RESERVATION_STATUS.MAINTENANCE : RESERVATION_STATUS.PENDING,
       linked: isMaintenance
         ? "예약 불가"
@@ -413,24 +416,58 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
             ? (form.growthImagingPlan === "촬영 예정" ? form.imagingMode : "미촬영")
             : "미연계",
     };
+    const candidates = [];
+
+    if (isRecurring && isImaging) {
+      const rangeStart = toDate(`${form.recurringStartDate}T00:00`);
+      const rangeEnd = toDate(`${form.recurringEndDate}T00:00`);
+      if (!rangeStart || !rangeEnd || rangeStart > rangeEnd) {
+        setMessage({ type: "error", text: "반복 예약의 시작/종료 날짜를 확인해 주세요." });
+        return;
+      }
+      const cursor = new Date(rangeStart);
+      while (cursor <= rangeEnd) {
+        const day = dateKey(cursor);
+        candidates.push({
+          ...baseReservation,
+          id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}-${day}`,
+          start: `${day}T${form.recurringStartTime}`,
+          end: `${day}T${form.recurringEndTime}`,
+        });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    } else {
+      candidates.push({
+        ...baseReservation,
+        id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`,
+        start: form.start,
+        end: form.end,
+      });
+    }
 
     if (isMaintenance && !isAdmin) {
       setMessage({ type: "error", text: "점검 예약 등록은 관리자만 가능합니다." });
       return;
     }
 
-    const conflict = findReservationConflict(reservations, candidate);
-    if (conflict) {
-      setMessage({ type: "error", text: conflict.message });
-      return;
+    const existingAndPending = [...reservations];
+    for (const candidate of candidates) {
+      const conflict = findReservationConflict(existingAndPending, candidate);
+      if (conflict) {
+        setMessage({ type: "error", text: conflict.message });
+        return;
+      }
+      existingAndPending.push(candidate);
     }
 
-    const result = await onAddReservation(candidate);
+    const result = candidates.length > 1
+      ? await onAddReservation(candidates)
+      : await onAddReservation(candidates[0]);
     if (result?.error) {
       setMessage({ type: "error", text: result.error });
       return;
     }
-    setMessage({ type: "success", text: "예약 신청이 저장되었습니다. 관리자가 승인하면 확정됩니다." });
+    setMessage({ type: "success", text: `${candidates.length}건 예약 신청이 저장되었습니다. 관리자가 승인하면 확정됩니다.` });
   }
 
   return (
@@ -458,6 +495,14 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
               {selectableFacilities.map((facility) => <option key={facility.id} value={facility.name}>{facility.name}</option>)}
             </select>
           </label>
+          {isImaging && (
+            <label>예약 입력 방식
+              <select value={form.bookingMode} onChange={(event) => updateForm("bookingMode", event.target.value)}>
+                <option value="single">단일 기간/시간</option>
+                <option value="recurring">기간 내 매일 같은 시간</option>
+              </select>
+            </label>
+          )}
           <label>예약명
             <input value={form.title} onChange={(event) => updateForm("title", event.target.value)} placeholder="예: 배추 팁번 실험" />
           </label>
@@ -469,12 +514,31 @@ function ReservationForm({ reservations, onAddReservation, disabled, isAdmin = f
               <input value={form.crop} onChange={(event) => updateForm("crop", event.target.value)} placeholder="예: 배추, 딸기, 고추" />
             </label>
           )}
-          <label>시작 일시
-            <input value={form.start} onChange={(event) => updateForm("start", event.target.value)} type="datetime-local" />
-          </label>
-          <label>종료 일시
-            <input value={form.end} onChange={(event) => updateForm("end", event.target.value)} type="datetime-local" />
-          </label>
+          {isRecurring && isImaging ? (
+            <>
+              <label>반복 시작 날짜
+                <input value={form.recurringStartDate} onChange={(event) => updateForm("recurringStartDate", event.target.value)} type="date" />
+              </label>
+              <label>반복 종료 날짜
+                <input value={form.recurringEndDate} onChange={(event) => updateForm("recurringEndDate", event.target.value)} type="date" />
+              </label>
+              <label>매일 시작 시간
+                <input value={form.recurringStartTime} onChange={(event) => updateForm("recurringStartTime", event.target.value)} type="time" />
+              </label>
+              <label>매일 종료 시간
+                <input value={form.recurringEndTime} onChange={(event) => updateForm("recurringEndTime", event.target.value)} type="time" />
+              </label>
+            </>
+          ) : (
+            <>
+              <label>시작 일시
+                <input value={form.start} onChange={(event) => updateForm("start", event.target.value)} type="datetime-local" />
+              </label>
+              <label>종료 일시
+                <input value={form.end} onChange={(event) => updateForm("end", event.target.value)} type="datetime-local" />
+              </label>
+            </>
+          )}
           {isGrowth && (
             <label className="full">촬영 여부
               <select value={form.growthImagingPlan} onChange={(event) => updateForm("growthImagingPlan", event.target.value)}>
@@ -944,22 +1008,23 @@ export default function App() {
     };
   }, []);
 
-  async function addReservation(reservation) {
+  async function addReservation(reservationOrReservations) {
     if (!isSupabaseConfigured || !supabase) return { error: "Supabase가 설정되지 않았습니다." };
-    const { data, error } = await supabase.from("reservations").insert(mapReservationToDb(reservation)).select().single();
+    const reservationsToCreate = Array.isArray(reservationOrReservations) ? reservationOrReservations : [reservationOrReservations];
+    const payload = reservationsToCreate.map(mapReservationToDb);
+    const { data, error } = await supabase.from("reservations").insert(payload).select();
     if (error) return { error: error.message };
-    
-    const savedReservation = mapDbToReservation(data);
+
+    const savedReservations = (data || []).map(mapDbToReservation);
     try {
-      await supabase.functions.invoke("send-reservation-email", {
+      await Promise.all(savedReservations.map((savedReservation) => supabase.functions.invoke("send-reservation-email", {
         body: { reservation: savedReservation },
-      });
+      })));
     } catch (emailError) {
       console.error("Email notification failed:", emailError);
     }
 
-    
-    setReservationsState((prev) => [...prev, savedReservation]);
+    setReservationsState((prev) => [...prev, ...savedReservations]);
     return { ok: true };
   }
 
