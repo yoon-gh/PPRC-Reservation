@@ -619,7 +619,17 @@ function MonthlyCalendar({ reservations, selectedCategory, month, onMonthChange 
                     {reservation.facility}
                   </div>
                 ))}
-                {extra > 0 && <div className="sensor-note">+{extra}건 더 있음</div>}
+                {extra > 0 && (
+                  <div
+                    className="sensor-note"
+                    title={dayReservations
+                      .slice(3)
+                      .map((reservation) => `${reservation.facility} · ${reservation.title} (${formatShortPeriod(reservation)})`)
+                      .join("\n")}
+                  >
+                    +{extra}건 더 있음
+                  </div>
+                )}
               </div>
             );
           })}
@@ -693,7 +703,7 @@ function ReservationTable({ reservations }) {
         ))}
       </div>
 
-      <div className="table-wrap">
+      <div className="table-wrap reservation-table-wrap">
         <table>
           <thead>
             <tr>
