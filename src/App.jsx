@@ -1133,8 +1133,8 @@ export default function App() {
                 ))}
               </div>
             </section>
-            <ReservationTable reservations={filteredReservations} />
             <MonthlyCalendar reservations={reservationsState} selectedCategory={tab} month={calendarMonth} onMonthChange={setCalendarMonth} />
+            <ReservationTable reservations={filteredReservations} />
           </div>
         )}
 
@@ -1201,7 +1201,7 @@ export default function App() {
         <p>본 시스템은 표현체 연구시설의 재배 및 촬영 장비 예약을 위한 플랫폼입니다.</p>
         <p>국립원예특작과학원 채소기초기반과</p>
         <p>담당자 문의: 063-238-6623 | yoonplant@korea.kr</p>
-        <p>Ver. 1.1 (2026.05)</p>
+        <p>Ver. 1.2 (2026.05)</p>
       </footer>
     </div>
   );
