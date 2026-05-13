@@ -1093,8 +1093,8 @@ export default function App() {
 
   const dashboardCards = [
     { label: "해당 월 전체 예약", value: reservationStats.total, icon: categoryIcon[CATEGORY.ALL], helper: `${calendarMonth.getFullYear()}년 ${calendarMonth.getMonth() + 1}월 기준` },
-    { label: "사용 가능 시설", value: facilityStatusStats[FACILITY_STATUS.AVAILABLE] || 0, icon: "🟢", helper: "현재 예약 가능 상태" },
     { label: "사용 중 시설", value: facilityStatusStats[FACILITY_STATUS.IN_USE] || 0, icon: "🔵", helper: "현재 사용 중" },
+    { label: "승인 대기 예약", value: reservationStats.pending, icon: "🟡", helper: "현재 승인 대기 상태" },
   ];
 
   return (
